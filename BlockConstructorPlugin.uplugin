@@ -1,0 +1,22 @@
+{
+	"FileVersion" : 3,
+	
+	"FriendlyName" : "BlockConstructorPlugin",
+	"Version" : 1,
+	"VersionName" : "1.0",
+	"CreatedBy" : " Vagen",
+	"CreatedByURL" : " ",
+	"EngineVersion" : "4.2.0",
+	"Description" : "Create and Manage BlockData",
+	"Category" : "Vagen",
+	"EnabledByDefault" : true,
+	
+	"Modules" :
+	[
+		{
+			"Name" : "BlockConstructorPlugin",
+			"Type" : "Developer"
+		},
+
+	]
+}
