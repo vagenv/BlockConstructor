@@ -1,0 +1,12 @@
+Intermediate
+*.bat
+*.exe
+*.opensdf
+*.sdf
+*.sln
+*.suo
+*.pdb
+*-DebugGame.dll
+*.log
+*.target.xml
+
