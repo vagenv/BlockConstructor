@@ -8,6 +8,136 @@
 
 
 
+//~~~~~ Multi Threading ~~~
+class FMegaBlockFinder : public FRunnable
+{
+	/** Thread to run the worker FRunnable on */
+	FRunnableThread* Thread;
+
+	/** Stop this thread? Uses Thread Safe Counter */
+	FThreadSafeCounter StopTaskCounter;
+
+	static  FMegaBlockFinder* Runnable;
+
+	/** Level Block Constructor*/
+	class ALevelBlockConstructor* TheConstructor;
+	
+	class UBlockLayer * TheLayer;
+	TArray<uint8> TerrainBitData;
+	TArray<uint64> ZSizes;
+	TArray<uint64> XSizes;
+	uint8 LayerID = 1;
+	ETypeOfOptimization OptimizationType;
+
+	uint32 LevelSize;
+	uint32 LevelHeight;
+	uint64 LevelZLayerSize;
+
+
+	FDateTime StartTime;
+
+	
+	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Horizontal_XDir(uint32& Z, uint32 X, uint32& Y1, uint32& Y2)const
+	{
+		for (uint32 i = Y1; i <= Y2; ++i)
+			if (TerrainBitData[LevelZLayerSize*Z + X*LevelSize + i] != LayerID)
+				return false;
+		return true;
+	}
+
+	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Horizontal_YDir(uint32& Z, uint32& X1, uint32& X2, uint32 Y)const
+	{
+			for (uint32 i = X1; i <= X2; ++i)
+				if (TerrainBitData[LevelZLayerSize*Z + i*LevelSize + Y] != LayerID)
+					return false;
+		return true;
+	}
+
+
+
+	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Volumetric_XDir(uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const
+	{
+
+		for (uint32 z = Z1; z <= Z2; z++)
+			for (uint32 y = Y1; y <= Y2; y++)
+				if (TerrainBitData[LevelZLayerSize*z + X2*LevelSize + y] != LayerID)
+					return false;
+		return true;
+	}
+
+	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Volumetric_YDir(uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const
+	{
+
+		for (uint32 z = Z1; z <= Z2; z++)
+			for (uint32 x = X1; x <= X2; x++)
+				if (TerrainBitData[LevelZLayerSize*z + x*LevelSize + Y2] != LayerID)
+					return false;
+
+		return true;
+	}
+
+	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Volumetric_ZDir(uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const
+	{
+		for (uint32 x = X1; x <= X2; ++x)
+			for (uint32 y = Y1; y <= Y2; ++y)
+				if (TerrainBitData[LevelZLayerSize*Z2 + x*LevelSize + y] != LayerID)
+					return false;
+		return true;
+	}
+	/*
+	*/
+
+	/*
+	bool CheckTerrainBitFilled_Horizontal_XDir(uint32& Z, uint32 X, uint32& Y1, uint32& Y2) const;
+	bool CheckTerrainBitFilled_Horizontal_YDir(uint32& Z, uint32& X1, uint32& X2, uint32 Y)const;
+
+
+	bool CheckTerrainBitFilled_Volumetric_XDir(uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const;
+	bool CheckTerrainBitFilled_Volumetric_YDir(uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const;
+	bool CheckTerrainBitFilled_Volumetric_ZDir(uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const;
+
+	*/
+
+	//Constructor / Destructor
+	FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, class UBlockLayer* newTheLayer);
+
+public:
+
+
+	static FMegaBlockFinder* Optimize_Horizontal(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, class UBlockLayer* newTheLayer);
+	static FMegaBlockFinder* Optimize_Volumetic(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, class UBlockLayer* newTheLayer);
+
+
+	virtual ~FMegaBlockFinder();
+
+	virtual bool Init();
+
+	virtual uint32 Run();
+
+
+	FORCEINLINE virtual void Stop() 
+	{
+		StopTaskCounter.Increment();
+	}
+
+	FORCEINLINE bool IsFinished() const
+	{
+		return (StopTaskCounter.GetValue()>0);
+	}
+	// End FRunnable interface
+
+	/** Makes sure this thread has stopped properly */
+	void EnsureCompletion();
+
+
+	static void ShutDown();
+	static bool IsThreadFinished();
+
+
+};
+
+
+
 
 // Block Constructor. Actor that holds, Constructs and Deconstructs Blocks
 UCLASS()
@@ -16,45 +146,27 @@ class ALevelBlockConstructor : public AActor
 	GENERATED_BODY()
 public:
 
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//						Legacy Properties
+
+
 	ALevelBlockConstructor(const FObjectInitializer& ObjectInitializer);
 
 
-
-	virtual void PostEditChangeProperty(FPropertyChangedEvent & PropertyChangedEvent)override;
-
-	void GenerateBlockData();
-
-	FTimerHandle ThreadCheckHandle;
+	virtual void BeginPlay()override;
+	virtual void PostLoad()override;
 
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void GenerateBitData();
-
-	void OptimiseBitData();
-	bool bOptimizing = false;
-
-	void BuildBitData();
+	//						Core Properties
 
 
-	// Old Func
-	void ReserveBitData();
-	void LoadTextureRawData();
-	void GenerateHeightBitData();
-	void GenerateBigChunks();
-	void BuildChuncks();
-	void BuildTerrain();
-
-
-
-
-	void CheckOptimizationThread();
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//					Config
-	
-
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+		bool bOptimizing = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
 		bool bStatic = false;
@@ -74,17 +186,98 @@ public:
 		int32 TerrainHeight = 32;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
 		UTexture2D* TerrainTexture;
-
-
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
-		class UStaticMesh* SpawnMesh;
+		UMaterialInstance* CurrentMaterial;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "1Base")
+		int32 MaterialLayerID = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		class UStaticMesh* BlockMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		UDataTable* BlockDataTable;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		TArray<FBlockIDMesh> BlocksID;
+
+	/*
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		FLayerData TheLayers;
+
+	UPROPERTY(EditAnywhere)
+		UBlockLayer* TheLayers[256];
+		*/
+
+
+	UPROPERTY()//EditAnywhere, BlueprintReadWrite, Category = "Data")
+		TArray<class UBlockLayer*>  TheLayers;
+
+
+		UPROPERTY()
+			TArray<uint8> TerrainBitData;
+
+	
+
+
+		/**/
+		TArray<BlockData> FinalBlockData;
+		TArray<MegaBlockData> FinalMegaBlockData;
+
+
+
+
+		//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
 		FTransform SpawnMeshRelativeTransform;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
+		//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1Base")
 		FVector CurrentSelectionConstructorPostion = FVector::ZeroVector;
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//						Core Events
+
+
+
+
+
+	virtual void PostEditChangeProperty(FPropertyChangedEvent & PropertyChangedEvent)override;
+
+	void GenerateBlockData();
+
+	FTimerHandle ThreadCheckHandle;
+
+
+
+	void GenerateBitData();
+
+	void OptimiseBitData_Horizontal();
+	void OptimiseBitData_Volumetric();
+
+	void BuildBitData();
+
+
+
+	void BuildPureBitTerrain();
+
+	// Old Func
+	void ReserveBitData();
+	void LoadTextureRawData();
+	void GenerateHeightBitData();
+	void GenerateBigMegaBlocks();
+	void BuildChuncks();
+	void BuildTerrain();
+
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//					Thread Control
+	
+
+	void CheckOptimizationThread();
+
 
 
 
@@ -92,19 +285,15 @@ public:
 
 	//									Data
 
+	//UPROPERTY()
 
-	UPROPERTY()//EditAnywhere, BlueprintReadWrite, Category = "Data")
-		TArray<class UBlockLayer*>  TheLayers;
 
-		TArray<uint8> TerrainBitData;
-		TArray<BlockData> FinalBlockData;
-		TArray<ChunkData> FinalChunkData;
 
-		bool CheckTerrainBitFilled_Box(uint16 Z, uint32 X1, uint32 X2, uint32 Y1, uint32 Y2);
-		bool CheckTerrainBitFilled_XDir(uint16 Z, uint32 X, uint32 Y1, uint32 Y2);
-		bool CheckTerrainBitFilled_YDir(uint16 Z, uint32 X1, uint32 X2, uint32 Y);
+	//bool CheckTerrainBitFilled_Box(uint32 Z, uint32 X1, uint32 X2, uint32 Y1, uint32 Y2);
 
-	// Image
+	
+
+
 		FByteBulkData* RawImageData;
 		FColor* FormatedImageData;
 
@@ -115,7 +304,6 @@ public:
 		UBoxComponent * SelectionBox;
 
 
-
 	class UBlockLayer* GetCurrentLayer();
 	class UBlockLayer* CreateLayer();
 
@@ -124,9 +312,7 @@ public:
 	void MoveSelection(EWay MoveWay);
 	void UpdateDrawSelectionBox();
 
-
 	void MoveSelectedBlock(EWay MoveWay);
-
 
 	void SpawnNewBlock();
 	void DestroySelectedBlock();
@@ -140,8 +326,6 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						Gameplay
-
-	virtual void BeginPlay()override;
 
 
 	//UFUNCTION(Exec)
@@ -157,74 +341,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Option")
 		bool bSaveLoadBlocks = false;
 
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//						Network Replication
-
-	// Blocks data updated, Called on client
-	UFUNCTION()
-		void ClientBlocksUpdated();
-
-	// Blocks data update, called on server
-	void Server_UpdateBlocksStatus();
-
-
-
-
 	static void PrintLog(FString Message);
 };
-
-//~~~~~ Multi Threading ~~~
-class FChunkFinder : public FRunnable
-{
-	/** Singleton instance, can access the thread any time via static accessor, if it is active! */
-	static  FChunkFinder* Runnable;
-
-	/** Thread to run the worker FRunnable on */
-	FRunnableThread* Thread;
-
-	/** Level Block Constructor*/
-	ALevelBlockConstructor* TheConstructor;
-
-	/** Stop this thread? Uses Thread Safe Counter */
-	FThreadSafeCounter StopTaskCounter;
-
-
-
-public:
-
-
-	//~~~ Thread Core Functions ~~~
-
-	//Constructor / Destructor
-	FChunkFinder(ALevelBlockConstructor* newTheContructor);
-	virtual ~FChunkFinder();
-
-	// Begin FRunnable interface.
-	virtual bool Init();
-	virtual uint32 Run();
-	virtual void Stop();
-	// End FRunnable interface
-
-	/** Makes sure this thread has stopped properly */
-	void EnsureCompletion();
-
-	bool IsChunkValid(ChunkMetaData& TheCheckChunk);
-
-	//~~~ Starting and Stopping Thread ~~~
-
-	/*
-	Start the thread and the worker from static (easy access)!
-	This code ensures only 1 Prime Number thread will be able to run at a time.
-	This function returns a handle to the newly started instance.
-	*/
-	static FChunkFinder* OptimiserInit(ALevelBlockConstructor* newTheContructor);
-
-	/** Shuts down the thread. Static so it can easily be called from outside the thread context */
-	static void Shutdown();
-
-	static bool IsThreadFinished();
-
-};
-

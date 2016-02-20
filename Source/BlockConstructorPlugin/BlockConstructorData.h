@@ -10,6 +10,14 @@
 
 // Camera State Type
 UENUM(BlueprintType)
+enum class ETypeOfOptimization : uint8
+{
+	Horizontal UMETA(DisplayName = "Horizontal, Flat Terrain (Fast)"),
+	Volumetic UMETA(DisplayName = "Volumetic (Slow, Efficient)"),
+};
+
+// Camera State Type
+UENUM(BlueprintType)
 enum class EWay : uint8
 {
 	UP UMETA(DisplayName = "Up"),
@@ -47,7 +55,7 @@ public:
 	
 };
 
-class ChunkMetaData 
+class MegaBlockMetaData 
 {
 public:
 	uint32 BlockNumber;
@@ -55,15 +63,16 @@ public:
 	uint32 X2;
 	uint32 Y1;
 	uint32 Y2;
-	uint32 Z;
+	uint32 Z1;
+	uint32 Z2;
 
-	ChunkMetaData() {}
-	ChunkMetaData(uint32 newBlockNumber,uint32 newZ, uint32 newX1, uint32 newX2, uint32 newY1, uint32 newY2)
-		:BlockNumber(newBlockNumber),Z(newZ), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2) 
+	MegaBlockMetaData() {}
+	MegaBlockMetaData(uint32 newBlockNumber,uint32 newZ1,uint32 newZ2, uint32 newX1, uint32 newX2, uint32 newY1, uint32 newY2)
+		:BlockNumber(newBlockNumber),Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2)
 	{}
 };
 
-struct ChunkData
+struct MegaBlockData
 {
 public:
 
@@ -75,8 +84,8 @@ public:
 	uint32 ArrayPosition;
 
 	TArray<ConstructorPosition> ThePositions;
-	ChunkData() {}
-	ChunkData(TArray<ConstructorPosition>& newPositions):ThePositions(newPositions)
+	MegaBlockData() {}
+	MegaBlockData(TArray<ConstructorPosition>& newPositions):ThePositions(newPositions)
 	{
 	}
 };
@@ -112,7 +121,18 @@ public:
 };
 */
 
+//BlueprintType
+USTRUCT()
+struct FBlockIDMesh : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int32  BlockID;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UMaterialInstance* BlockMaterial;
+
+};
 
 
 

@@ -17,9 +17,6 @@ void UBlockLayer::PrintLog(FString Message)
 	UE_LOG(BlockPlugin, Warning, TEXT("  "))
 }
 
-
-
-
 void UBlockLayer::Construct()
 {
 
@@ -28,21 +25,6 @@ void UBlockLayer::Construct()
 void UBlockLayer::UpdateInstances()
 {
 	
-}
-void UBlockLayer::AddBlockInstance(FTransform& BlockTransform)
-{
-	AddInstance(BlockTransform);
-}
-bool UBlockLayer::AddBlockInstance(FTransform BlockTransform, FVector ConstructorPosition)
-{
-	//if (IsConstructorPositionBusy(ConstructorPosition))return false;
-
-//	FInstancedBlockData newData(ConstructorPosition);
-
-	//TheInstances.Add(newData);
-	AddInstance(BlockTransform);
-
-	return true;
 }
 
 bool UBlockLayer::DestroyBlockInstance(FVector ConstructorPosition)

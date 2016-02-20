@@ -15,7 +15,10 @@ public:
 
 
 	FReply GenerateBitData();
-	FReply OptimiseBitData();
+
+	FReply OptimiseBitData_Horizontal();
+	FReply OptimiseBitData_Volumetical();
+
 	FReply BuildBitData();
 
 
@@ -40,10 +43,10 @@ public:
 	FReply ReserveBitData();
 	FReply LoadTextureRawData();
 	FReply GenerateHeightBitData();
-	FReply GenerateBigChunks();
+	FReply GenerateBigMegaBlocks();
 	FReply BuildChuncks();
 	FReply BuildTerrain();
-
+	FReply BuildPureBitTerrain();
 
 
 

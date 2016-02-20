@@ -17,23 +17,16 @@ class UBlockLayer : public UInstancedStaticMeshComponent
 public:
 
 	UBlockLayer(const class FObjectInitializer& PCIP);
-public:
+
+	class ALevelBlockConstructor* TheConstructor;
 
 	void Construct();
-
-	int32 Dimensions;
 
 	void UpdateInstances();
 
 
 	TArray<BlockData> TheBlocks;
-	TArray<ChunkData> TheChunks;
-
-//	UFUNCTION(BlueprintCallable , Category = "TheBase")
-		bool AddBlockInstance(FTransform BlockTransform, FVector ConstructorPosition);
-
-//	UFUNCTION(BlueprintCallable, Category = "TheBase")
-		void AddBlockInstance(FTransform& BlockTransform);
+	TArray<MegaBlockData> TheMegaBlocks;
 
 //	UFUNCTION(BlueprintCallable, Category = "TheBase")
 		bool DestroyBlockInstance(FVector ConstructorPosition);
@@ -44,6 +37,12 @@ public:
 
 	UPROPERTY()
 		UStaticMesh* TheMesh;
+	UPROPERTY()
+		UMaterialInstance* TheMaterial;
+
+
+	uint8 LayerID = 1;
+
 
 
 	static void PrintLog(FString Message);

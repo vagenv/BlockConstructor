@@ -81,9 +81,25 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 						.HAlign(HAlign_Fill)
 						.VAlign(VAlign_Fill)
 						[
-							SNew(SButton)
-							.Text(LOCTEXT(" Optimise Bit Data ", "  Optimise Bit Data  "))
-						.OnClicked(this, &FLevelBlockConstructorDetails::OptimiseBitData)
+							SNew(SHorizontalBox)
+									+ SHorizontalBox::Slot()
+										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
+										.HAlign(HAlign_Fill)
+										.VAlign(VAlign_Fill)
+										[
+											SNew(SButton)
+											.Text(LOCTEXT("Horizontal Optimization ", "  Horizontal Optimization  "))
+											.OnClicked(this, &FLevelBlockConstructorDetails::OptimiseBitData_Horizontal)
+										]
+									+ SHorizontalBox::Slot()
+										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
+										.HAlign(HAlign_Fill)
+										.VAlign(VAlign_Fill)
+										[
+											SNew(SButton)
+											.Text(LOCTEXT(" Volumetic Optimization", "  Volumetic Optimization  "))
+										.OnClicked(this, &FLevelBlockConstructorDetails::OptimiseBitData_Volumetical)
+										]
 						]	
 					+SVerticalBox::Slot()
 						.Padding(1.0f, 1.0f, 1.0f, 1.0f)
@@ -97,7 +113,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 										.VAlign(VAlign_Fill)
 										[
 											SNew(SButton)
-											.Text(LOCTEXT(" Build Chunks ", " Build Chunks   "))
+											.Text(LOCTEXT(" Build MegaBlocks ", " Build MegaBlocks   "))
 										.OnClicked(this, &FLevelBlockConstructorDetails::BuildChuncks)
 										]
 									+ SHorizontalBox::Slot()
@@ -108,6 +124,15 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 											SNew(SButton)
 											.Text(LOCTEXT("  Build Blocks ", "  Build Blocks  "))
 										.OnClicked(this, &FLevelBlockConstructorDetails::BuildTerrain)
+										] 
+									+ SHorizontalBox::Slot()
+										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
+										.HAlign(HAlign_Fill)
+										.VAlign(VAlign_Fill)
+										[
+											SNew(SButton)
+											.Text(LOCTEXT("  Build Pure Bit Data", "  Build Pure Bit Data  "))
+										.OnClicked(this, &FLevelBlockConstructorDetails::BuildPureBitTerrain)
 										]
 						]
 					+SVerticalBox::Slot()
@@ -166,8 +191,8 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 					.VAlign(VAlign_Fill)
 					[
 						SNew(SButton)
-						.Text(LOCTEXT(" GenerateBigChunks ", "GenerateBigChunks   "))
-					.OnClicked(this, &FLevelBlockConstructorDetails::GenerateBigChunks)
+						.Text(LOCTEXT(" GenerateBigMegaBlocks ", "GenerateBigMegaBlocks   "))
+					.OnClicked(this, &FLevelBlockConstructorDetails::GenerateBigMegaBlocks)
 					]
 
 				+ SVerticalBox::Slot()
@@ -266,10 +291,11 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 		}
 	}
 
-	IDetailCategoryBuilder&  CustomCommandsCategory = DetailBuilder.EditCategory("Custom Commands");
 
+	/*
+	IDetailCategoryBuilder&  SelectBoxCategory = DetailBuilder.EditCategory("Select Box");
 
-	const FText ButtonCaption = FText::FromString("Do Something");
+	SelectBoxCategory.InitiallyCollapsed(true);
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +416,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 
 	//							Selection Box Control
 
-	DetailBuilder.EditCategory("Selected Block ", FText::GetEmpty(), ECategoryPriority::Important)
+	DetailBuilder.EditCategory("Selected Block", FText::GetEmpty(), ECategoryPriority::Important)
 		.AddCustomRow(FText::GetEmpty())
 		[
 
@@ -495,8 +521,9 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 
 					]
 		];
+	*/
 
-
+/*
 	// Edit the lighting category
 	IDetailCategoryBuilder& BaseSettings = DetailBuilder.EditCategory("Base");
 
@@ -504,9 +531,9 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 	if (NewInts) 
 	{
 	//	PrintLog(NewInts->GetClass()->GetName());
-		BaseSettings.AddProperty("bStatic", NewInts->GetClass(), TEXT(" Is Static?"), EPropertyLocation::Advanced);
+		BaseSettings.AddProperty("bStatic", NewInts->GetClass(), TEXT(" Is Static?"), EPropertyLocation::Common);
 	}
-	
+	*/
 
 }
 
@@ -517,9 +544,15 @@ FReply  FLevelBlockConstructorDetails::GenerateBitData()
 	return FReply::Handled();
 }
 
-FReply  FLevelBlockConstructorDetails::OptimiseBitData()
+FReply  FLevelBlockConstructorDetails::OptimiseBitData_Horizontal()
 {
-	if (TheInstance)TheInstance->OptimiseBitData();
+	if (TheInstance)TheInstance->OptimiseBitData_Horizontal();
+	return FReply::Handled();
+}
+
+FReply FLevelBlockConstructorDetails::OptimiseBitData_Volumetical()
+{
+	if (TheInstance)TheInstance->OptimiseBitData_Volumetric();
 	return FReply::Handled();
 }
 
@@ -550,9 +583,9 @@ FReply  FLevelBlockConstructorDetails::GenerateHeightBitData()
 	return FReply::Handled();
 }
 
-FReply  FLevelBlockConstructorDetails::GenerateBigChunks()
+FReply  FLevelBlockConstructorDetails::GenerateBigMegaBlocks()
 {
-	if (TheInstance)TheInstance->GenerateBigChunks();
+	if (TheInstance)TheInstance->GenerateBigMegaBlocks();
 	return FReply::Handled();
 }
 
@@ -566,6 +599,14 @@ FReply  FLevelBlockConstructorDetails::BuildTerrain()
 {
 	if (TheInstance)TheInstance->BuildTerrain();
 	return FReply::Handled();
+}
+
+FReply FLevelBlockConstructorDetails::BuildPureBitTerrain()
+{
+	{
+		if (TheInstance)TheInstance->BuildPureBitTerrain();
+		return FReply::Handled();
+	}
 }
 
 
