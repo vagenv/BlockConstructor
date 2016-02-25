@@ -25,7 +25,7 @@ public:
 	void UpdateInstances();
 
 
-	TArray<BlockData> TheBlocks;
+	TArray<SimpleBlockData> TheBlocks;
 	TArray<MegaBlockData> TheMegaBlocks;
 
 //	UFUNCTION(BlueprintCallable, Category = "TheBase")

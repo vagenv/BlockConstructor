@@ -11,17 +11,44 @@ class FLevelBlockConstructorDetails : public IDetailCustomization
 {
 public:
 
+	FLevelBlockConstructorDetails();
+
+	FTextBlockStyle BigBlackTextStyle;
+	FTextBlockStyle BigRedTextStyle;
+	FTextBlockStyle BigWhiteTextStyle;
+	FTextBlockStyle MediumBlackTextStyle;
+	FTextBlockStyle MediumWhiteTextStyle;
+
+	void SaveTextChanged (const FText& NewText, ETextCommit::Type TextType);
+
+
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)override;
 
-
-	FReply GenerateBitData();
+	// Generate Bit Data From Texture
+	FReply GenerateBitDataFromTexture();
 
 	FReply OptimiseBitData_Horizontal();
 	FReply OptimiseBitData_Volumetical();
 
-	FReply BuildBitData();
+
+	FReply DestroyBitData();
+	FReply DestroyLevelData();
+	FReply DestroyEverything();
+
+	FReply BuildMegaBlocks();
+	FReply BuildSimpleBlocks();
+	FReply BuildPureBitTerrain();
+
+	FReply BuildBlockArrayData();
+
+	FReply GenerateBitDataFromLevel();
 
 
+	FReply SaveData();
+	FReply LoadData();
+
+
+	/*
 
 
 
@@ -33,10 +60,6 @@ public:
 	FReply GenerateTerrain();
 
 
-	FReply DestroyBitData();
-	FReply DestroyLevelData();
-
-	FReply DestroyEverything();
 
 
 
@@ -44,11 +67,9 @@ public:
 	FReply LoadTextureRawData();
 	FReply GenerateHeightBitData();
 	FReply GenerateBigMegaBlocks();
-	FReply BuildChuncks();
-	FReply BuildTerrain();
-	FReply BuildPureBitTerrain();
 
 
+	*/
 
 	static TSharedRef<IDetailCustomization> MakeInstance();
 

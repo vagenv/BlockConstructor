@@ -44,16 +44,41 @@ public:
 	{}
 };
 
-struct BlockData 
+FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition)
+{
+	Ar << ThePosition.X;
+	Ar << ThePosition.Y;
+	Ar << ThePosition.Z;
+
+	return Ar;
+}
+
+
+
+
+struct SimpleBlockData 
 {
 public:
 	ConstructorPosition Position;
 	uint32 ArrayPosition;
-	BlockData() {}
-	BlockData(ConstructorPosition newPosition, uint32 newArrayPosition):Position(newPosition),ArrayPosition(newArrayPosition)
+	SimpleBlockData() {}
+	SimpleBlockData(ConstructorPosition newPosition, uint32 newArrayPosition):Position(newPosition),ArrayPosition(newArrayPosition)
 	{}
 	
 };
+
+FORCEINLINE FArchive& operator<<(FArchive &Ar, SimpleBlockData& TheBlock)
+{
+	Ar << TheBlock.Position;
+	Ar << TheBlock.ArrayPosition;
+	return Ar;
+}
+
+
+
+
+
+
 
 class MegaBlockMetaData 
 {
@@ -89,6 +114,75 @@ public:
 	{
 	}
 };
+
+FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockData& TheBlock)
+{
+	Ar << TheBlock.XScale;
+	Ar << TheBlock.YScale;
+	Ar << TheBlock.ZScale;
+
+	Ar << TheBlock.Location;
+
+	Ar << TheBlock.ArrayPosition;
+
+	Ar << TheBlock.ThePositions;
+
+	return Ar;
+}
+
+
+
+
+struct BlockSaveData 
+{
+public:
+	//TArray<uint8> TerrainBitData;
+	TArray<SimpleBlockData> SimpleBlocks;
+	TArray<MegaBlockData> MegaBlocks;
+
+	BlockSaveData() 
+	{
+	}
+	/*
+	 BlockSaveData(const TArray<uint8>& newTerrainBitData,const TArray<SimpleBlockData>& newSimpleBlocks, const TArray<MegaBlockData>& newMegaBlocks)
+		:TerrainBitData(newTerrainBitData),SimpleBlocks(newSimpleBlocks),MegaBlocks(newMegaBlocks)
+	{
+
+	}
+	 
+	 */
+	BlockSaveData(const TArray<SimpleBlockData>& newSimpleBlocks, const TArray<MegaBlockData>& newMegaBlocks)
+		:SimpleBlocks(newSimpleBlocks),MegaBlocks(newMegaBlocks)
+	{
+
+	}
+
+};
+
+FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockSaveData& SaveData)
+{
+//	Ar << SaveData.TerrainBitData;
+	Ar << SaveData.SimpleBlocks;
+	Ar << SaveData.MegaBlocks;
+
+	return Ar;
+}
+
+
+
+/*
+FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockSaveData* SaveGameData)
+{
+	if (!SaveGameData) return Ar;
+	//~
+
+	//	Ar << SaveGameData->TerrainBitData;  //int32
+	//	Ar << SaveGameData->SimpleBlocks;  //FVector
+	//Ar << SaveGameData->TerrainBitData; //TArray<FRotator>
+
+	return Ar;
+}
+*/
 
 /*
 USTRUCT()
