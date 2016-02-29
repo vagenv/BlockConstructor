@@ -19,6 +19,8 @@ public:
 	FTextBlockStyle MediumBlackTextStyle;
 	FTextBlockStyle MediumWhiteTextStyle;
 
+
+
 	void SaveTextChanged (const FText& NewText, ETextCommit::Type TextType);
 
 
@@ -26,6 +28,8 @@ public:
 
 	// Generate Bit Data From Texture
 	FReply GenerateBitDataFromTexture();
+
+	FReply CreateLayersFromBitData();
 
 	FReply OptimiseBitData_Horizontal();
 	FReply OptimiseBitData_Volumetical();

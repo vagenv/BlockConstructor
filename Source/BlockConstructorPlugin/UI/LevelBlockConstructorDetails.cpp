@@ -18,7 +18,7 @@ FLevelBlockConstructorDetails::FLevelBlockConstructorDetails()
 
 	BigBlackTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 17));
 	BigBlackTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::Black));
-
+//	BigBlackTextStyle.
 
 
 	BigRedTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 17));
@@ -65,6 +65,8 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 	}
 
 
+
+	if (!TheInstance)return;
 
 	DetailBuilder.EditCategory("System", FText::GetEmpty(), ECategoryPriority::Important);
 	DetailBuilder.EditCategory("Texture to Terrain", FText::GetEmpty(), ECategoryPriority::Important);
@@ -185,12 +187,12 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 		.AddCustomRow(FText::GetEmpty())
 		[
 			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Bottom)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			.HeightOverride(35)
 			[
 				SNew(SButton)
-				.Text(LOCTEXT("  Generate Data from Texture  ", "  Generate Data from Texture  "))
+				.Text(LOCTEXT("  Generate Data from Texture  ", "  Generate Bit Data from Texture  "))
 				.TextStyle(&BigBlackTextStyle)
 				.OnClicked(this, &FLevelBlockConstructorDetails::GenerateBitDataFromTexture)
 			]
@@ -201,6 +203,23 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 
 
 
+	/*
+	TerrainManipulationCategory
+		.AddCustomRow(FText::GetEmpty())
+		[
+			SNew(SBox)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.HeightOverride(35)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT(" Create Layers From Bit Data  ", " Create Layers "))
+				.TextStyle(&BigBlackTextStyle)
+				.OnClicked(this, &FLevelBlockConstructorDetails::CreateLayersFromBitData)
+			]
+		];
+
+		*/
 
 	TerrainManipulationCategory
 		.AddCustomRow(FText::GetEmpty())
@@ -208,7 +227,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Bottom)
-			.HeightOverride(30)
+			.HeightOverride(35)
 			[
 				SNew(STextBlock)
 				.Text(LOCTEXT(" Bit Data Optimization ", " Bit Data Optimization "))
@@ -251,13 +270,16 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 		];
 
 
+
+
+
 	TerrainManipulationCategory
 		.AddCustomRow(FText::GetEmpty())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Bottom)
-			.HeightOverride(30)
+			.HeightOverride(35)
 			[
 				SNew(STextBlock)
 				.Text(LOCTEXT(" Building Terrain Meshes ", " Building Terrain Meshes "))
@@ -321,7 +343,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Fill)
+			.VAlign(VAlign_Bottom)
 			.HeightOverride(35)
 			[
 				SNew(STextBlock)
@@ -540,7 +562,8 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 							[
 
 								SNew(SEditableText)
-									.Text(LOCTEXT("D:\\SaveFileName", "D:\\SaveFileName"))// NSLOCTEXT("SaveFile", "SaveFileName",  ))
+									//.Text(LOCTEXT("D:\\SaveFileName", "D:\\SaveFileName"))// NSLOCTEXT("SaveFile", "SaveFileName",  ))
+									.Text(FText::FromString(TheInstance->SaveFileDir))
 									.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 14))
 									.ColorAndOpacity(FSlateColor(FLinearColor::White))
 									//.TextStyle(&MediumWhiteTextStyle)
@@ -619,15 +642,21 @@ FReply  FLevelBlockConstructorDetails::GenerateBitDataFromTexture()
 	return FReply::Handled();
 }
 
+FReply FLevelBlockConstructorDetails::CreateLayersFromBitData()
+{
+	if (TheInstance)TheInstance->CreateLayersFromBitData();
+	return FReply::Handled();
+}
+
 FReply  FLevelBlockConstructorDetails::OptimiseBitData_Horizontal()
 {
-	if (TheInstance)TheInstance->OptimiseBitData_Horizontal();
+	if (TheInstance)TheInstance->OptimiseBitData(ETypeOfOptimization::Horizontal);
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::OptimiseBitData_Volumetical()
 {
-	if (TheInstance)TheInstance->OptimiseBitData_Volumetric();
+	if (TheInstance)TheInstance->OptimiseBitData(ETypeOfOptimization::Volumetic);
 	return FReply::Handled();
 }
 
@@ -645,13 +674,13 @@ FReply FLevelBlockConstructorDetails::GenerateBitDataFromLevel()
 
 FReply FLevelBlockConstructorDetails::SaveData()
 {
-	if (TheInstance)TheInstance->SaveData();
+	if (TheInstance)TheInstance->SaveBlockData();
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::LoadData()
 {
-	if (TheInstance)TheInstance->LoadData();
+	if (TheInstance)TheInstance->LoadBlockData();
 	return FReply::Handled();
 }
 

@@ -9,7 +9,7 @@
 
 
 // Base for Level Block
-UCLASS()
+UCLASS(HideCategories = ("Instances"))
 class UBlockLayer : public UInstancedStaticMeshComponent
 {
 	GENERATED_BODY()
@@ -18,15 +18,37 @@ public:
 
 	UBlockLayer(const class FObjectInitializer& PCIP);
 
-	class ALevelBlockConstructor* TheConstructor;
+	// Pointer to COnstructor
+	class AActor* TheConstructor;
 
-	void Construct();
+
+	uint8 LayerMaterialID = 1;
+
+		TArray<SimpleBlockData> TheSimpleBlocks;
+
+		TArray<MegaBlockData> TheMegaBlocks;
+
+	// Inistialise and Spawn all the blocks
+		uint32 VerticalSize;
+		uint32 HorizontalSize;
+		float GridSize;
+	void BuildAllBlocks();
+
+	/*
+	// Main Mesh Component
+	UPROPERTY()
+		UStaticMesh* TheMesh;
+	UPROPERTY()
+		UMaterialInstance* TheMaterial;
+		*/
+
+
+
+
 
 	void UpdateInstances();
 
 
-	TArray<SimpleBlockData> TheBlocks;
-	TArray<MegaBlockData> TheMegaBlocks;
 
 //	UFUNCTION(BlueprintCallable, Category = "TheBase")
 		bool DestroyBlockInstance(FVector ConstructorPosition);
@@ -35,13 +57,6 @@ public:
 		bool IsConstructorPositionBusy(FVector ConstructorPosition);
 
 
-	UPROPERTY()
-		UStaticMesh* TheMesh;
-	UPROPERTY()
-		UMaterialInstance* TheMaterial;
-
-
-	uint8 LayerID = 1;
 
 
 

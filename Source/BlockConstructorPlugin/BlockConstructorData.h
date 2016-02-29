@@ -46,13 +46,10 @@ public:
 
 FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition)
 {
-	Ar << ThePosition.X;
-	Ar << ThePosition.Y;
-	Ar << ThePosition.Z;
+	Ar << ThePosition.X<< ThePosition.Y<< ThePosition.Z;
 
 	return Ar;
 }
-
 
 
 
@@ -69,8 +66,7 @@ public:
 
 FORCEINLINE FArchive& operator<<(FArchive &Ar, SimpleBlockData& TheBlock)
 {
-	Ar << TheBlock.Position;
-	Ar << TheBlock.ArrayPosition;
+	Ar << TheBlock.Position<< TheBlock.ArrayPosition;
 	return Ar;
 }
 
@@ -97,78 +93,157 @@ public:
 	{}
 };
 
-struct MegaBlockData
+
+struct MegaBlockCoreData 
+{
+public:
+	//TArray<ConstructorPosition> ThePositions;
+	uint16 X1;
+	uint16 X2;
+	uint16 Y1;
+	uint16 Y2;
+	uint16 Z1;
+	uint16 Z2;
+
+
+	MegaBlockCoreData() {}
+	/*
+	MegaBlockCoreData(const MegaBlockData& TheBlock):
+		X1(TheBlock.X1), X2(TheBlock.X2), Y1(TheBlock.Y1), Y2(TheBlock.Y2), Z1(TheBlock.Z1), Z2(TheBlock.Z2)
+	{
+	}
+	*/
+	MegaBlockCoreData(const uint16& newZ1, const uint16 & newZ2,const uint16 & newX1, const uint16 & newX2,const uint16 & newY1, const uint16 & newY2)
+		:Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2)
+	{
+	}
+};
+FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock)
+{
+	Ar 	<< TheBlock.Z1 << TheBlock.Z2
+		<< TheBlock.X1 << TheBlock.X2
+		<< TheBlock.Y1 << TheBlock.Y2;
+
+	return Ar;
+}
+
+
+
+
+struct MegaBlockData:public MegaBlockCoreData
 {
 public:
 
-	float XScale;
-	float YScale;
-	float ZScale;
-
-	FVector Location;
+	FVector Location=FVector::ZeroVector;
 	uint32 ArrayPosition;
 
-	TArray<ConstructorPosition> ThePositions;
 	MegaBlockData() {}
-	MegaBlockData(TArray<ConstructorPosition>& newPositions):ThePositions(newPositions)
+
+	/*
+	MegaBlockData(const MegaBlockCoreData NewMegaCoreData)
+	{
+		Z1 = NewMegaCoreData.Z1;
+		Z2 = NewMegaCoreData.Z2;
+
+		X1 = NewMegaCoreData.X1;
+		X2 = NewMegaCoreData.X2;
+
+		Y1 = NewMegaCoreData.Y1;
+		Y2 = NewMegaCoreData.Y2;
+	}
+
+	*/
+	/*
+	MegaBlockData(uint16 newZ1, uint16 newZ2, uint16 newX1, uint16 newX2, uint16 newY1, uint16 newY2)
+		:Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2)
 	{
 	}
+	*/
 };
-
+/*
 FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockData& TheBlock)
 {
-	Ar << TheBlock.XScale;
-	Ar << TheBlock.YScale;
-	Ar << TheBlock.ZScale;
-
-	Ar << TheBlock.Location;
-
-	Ar << TheBlock.ArrayPosition;
-
-	Ar << TheBlock.ThePositions;
+	//<< TheBlock.XScale<< TheBlock.YScale<< TheBlock.ZScale
+	Ar << TheBlock.Location << TheBlock.ArrayPosition;
 
 	return Ar;
 }
 
+*/
 
 
-
-struct BlockSaveData 
+struct BlockLayerSaveData 
 {
 public:
-	//TArray<uint8> TerrainBitData;
-	TArray<SimpleBlockData> SimpleBlocks;
-	TArray<MegaBlockData> MegaBlocks;
 
-	BlockSaveData() 
+
+	uint8 LayerMaterialID;
+
+	TArray<ConstructorPosition>  SimpleBlocks_Core;
+	TArray<MegaBlockCoreData>    MegaBlocks_Core;
+
+	BlockLayerSaveData() {}
+
+	BlockLayerSaveData(uint8 newLayerMaterialID, const TArray<SimpleBlockData>& newSimpleBlocks, const TArray<MegaBlockData>& newMegaBlocks)
+		:LayerMaterialID(newLayerMaterialID)
 	{
-	}
-	/*
-	 BlockSaveData(const TArray<uint8>& newTerrainBitData,const TArray<SimpleBlockData>& newSimpleBlocks, const TArray<MegaBlockData>& newMegaBlocks)
-		:TerrainBitData(newTerrainBitData),SimpleBlocks(newSimpleBlocks),MegaBlocks(newMegaBlocks)
-	{
+		MegaBlocks_Core.SetNumUninitialized(newMegaBlocks.Num());
+		for (int32 i = 0; i < newMegaBlocks.Num(); i++)
+		{
+			MegaBlocks_Core[i] = MegaBlockCoreData( newMegaBlocks[i].Z1, newMegaBlocks[i].Z2, 
+													newMegaBlocks[i].X1, newMegaBlocks[i].X2, 
+													newMegaBlocks[i].Y1, newMegaBlocks[i].Y2 );
+		}
+		
 
+		SimpleBlocks_Core.SetNumUninitialized(newSimpleBlocks.Num());
+		for (int32 i = 0; i < newSimpleBlocks.Num();i++)
+		{
+			SimpleBlocks_Core[i] = newSimpleBlocks[i].Position;
+		}
 	}
-	 
-	 */
-	BlockSaveData(const TArray<SimpleBlockData>& newSimpleBlocks, const TArray<MegaBlockData>& newMegaBlocks)
-		:SimpleBlocks(newSimpleBlocks),MegaBlocks(newMegaBlocks)
-	{
-
-	}
-
 };
-
-FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockSaveData& SaveData)
+FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockLayerSaveData& TheLayerSaveData)
 {
-//	Ar << SaveData.TerrainBitData;
-	Ar << SaveData.SimpleBlocks;
-	Ar << SaveData.MegaBlocks;
+	Ar << TheLayerSaveData.LayerMaterialID << TheLayerSaveData.SimpleBlocks_Core << TheLayerSaveData.MegaBlocks_Core;
 
 	return Ar;
 }
 
 
+
+struct BlockConstructorSaveData
+{
+public:
+	TArray<BlockLayerSaveData> TheLayers;
+
+	uint16 LevelSize = 0;
+	uint16 LevelHeight = 0;
+	uint16 GridSize = 0;
+	BlockConstructorSaveData() {}
+	BlockConstructorSaveData( const int32&newLevelSize, const int32& newLevelHeight, const float& newGridSize) :
+		LevelSize(newLevelSize),
+		GridSize(newGridSize)
+	{
+	}
+
+	BlockConstructorSaveData(const TArray<BlockLayerSaveData> newTheLayers,const int32&newLevelSize, const int32& newLevelHeight, const float& newGridSize ):
+		 TheLayers(newTheLayers),
+		 LevelSize(newLevelSize),
+		GridSize(newGridSize)
+	{
+	}
+};
+
+
+FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockConstructorSaveData& SaveData)
+{
+	Ar << SaveData.TheLayers<<SaveData.LevelSize<<SaveData.LevelHeight<<SaveData.GridSize;
+
+	return Ar;
+}
+/*
+*/
 
 /*
 FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockSaveData* SaveGameData)
@@ -217,12 +292,12 @@ public:
 
 //BlueprintType
 USTRUCT()
-struct FBlockIDMesh : public FTableRowBase
+struct FBlockMaterialIDTable : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		int32  BlockID;
+		int32  MaterialID;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UMaterialInstance* BlockMaterial;
 
