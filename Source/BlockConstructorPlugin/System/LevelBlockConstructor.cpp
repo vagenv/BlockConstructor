@@ -66,6 +66,7 @@ void ALevelBlockConstructor::BeginPlay()
 	bOptimizing = false;
 	if (bAutoLoadData) 
 	{
+
 		LoadBlockData();
 		BuildAllBlocks();
 	}
@@ -84,43 +85,7 @@ void ALevelBlockConstructor::BeginDestroy()
 
 }
 
-void ALevelBlockConstructor::CreateLayersFromBitData()
-{
-	//PrintLog("Create Layers");
-	TArray<uint8> GenerateLayers;
 
-	uint64 LayerZSize = LevelSize*LevelSize;
-
-	// Find all Possible items
-	for (int32 z = 0; z < LevelHeight;++z)
-	{
-		for (int32 x = 0; x < LevelSize; ++x)
-		{
-			for (int32 y = 0; y < LevelSize; ++y)
-			{
-				if (!Layers_ContainsID(GenerateLayers, TerrainBitData[LayerZSize*z + x*LevelSize + y] ))
-				{
-					Layers_ADD_ID(GenerateLayers, TerrainBitData[LayerZSize*z + x*LevelSize + y]);
-					//PrintLog("Found");
-				}
-
-			}
-		}
-	}
-
-	//PrintLog("Types Found :  "+ FString::FromInt(GenerateLayers.Num()));
-
-	// Create layer for each
-
-	for (int32 i = 0; i < GenerateLayers.Num();i++)
-	{
-		UBlockLayer* NewLayer = CreateLayerWithID(GenerateLayers[i]);
-		if (NewLayer)TheLayers.Add(NewLayer);
-	}
-
-
-
-}
 
 void ALevelBlockConstructor::PostEditChangeProperty(FPropertyChangedEvent & PropertyChangedEvent)
 {
@@ -205,9 +170,7 @@ void ALevelBlockConstructor::GenerateBitDataFromTexture()
 	LevelZLayerSize = LevelSize*LevelSize;
 	uint64 MemoryUsageSize = LevelZLayerSize*LevelHeight;
 
-	TerrainBitData.AddDefaulted(MemoryUsageSize);
-
-
+	TerrainBitData.SetNumZeroed(MemoryUsageSize);
 
 
 	GenerateTerrainHeightmap->MipGenSettings.operator=(TMGS_NoMipmaps);
@@ -229,8 +192,6 @@ void ALevelBlockConstructor::GenerateBitDataFromTexture()
 		PrintLog("No Heightmap or Mesh");
 		return;
 	}
-	PrintLog(" Height Bitmap Generation Started");
-
 	FColor PixelColor;
 	uint32 IterWidth = ((uint32)LevelSize>TextureWidth)?TextureWidth: LevelSize;
 	uint32 IterHeight = ((uint32)LevelSize > TextureHeight) ? TextureHeight : LevelSize;
@@ -255,51 +216,228 @@ void ALevelBlockConstructor::GenerateBitDataFromTexture()
 			}		
 		}
 	}
-	PrintLog("Height Bitmap Generation Finished  : " + FString::FromInt(BlockNum));
+	//PrintLog("Height Bitmap Generation Finished  : " + FString::FromInt(BlockNum));
 	CreateLayersFromBitData();
+}
+
+
+bool ALevelBlockConstructor::IsPositionBusy(const ConstructorPosition & ThePosition)const
+{
+	for (int32 i = 0; i < TheLayers.Num(); i++)
+	{
+		if (TheLayers[i]->IsPositionBusy(ThePosition))
+			return true;
+	}
+
+	return false;
+}
+
+
+void ALevelBlockConstructor::AddBlockAtLocation(FVector Location, uint8 LayerID)
+{
+	UBlockLayer* TheLayer = GetLayerWithID(LayerID);
+
+	if (TheLayer==nullptr) CreateLayerWithID(LayerID);
+
+	if (TheLayer) 
+	{
+		ConstructorPosition TheNewPosition;
+		FVector Temp = GetActorLocation()- Location;
+		TheNewPosition.X = LevelSize/2 - (Temp.X / GridSize) ;
+		TheNewPosition.Y = LevelSize/2 - (Temp.Y / GridSize);
+		TheNewPosition.Z = LevelHeight/2 -(Temp.Z / GridSize);
+
+		if(!IsPositionBusy(TheNewPosition))
+			TheLayer->AddSimpleBlockInstance(TheNewPosition);
+	}
+	else PrintLog("No Layer");
+
+
+}
+
+void ALevelBlockConstructor::DestroyBlockAtLocaiton(FVector Location)
+{
+	ConstructorPosition TheNewPosition;
+	FVector Temp = GetActorLocation() - Location;
+	TheNewPosition.X = LevelSize / 2 - (Temp.X / GridSize);
+	TheNewPosition.Y = LevelSize / 2 - (Temp.Y / GridSize);
+	TheNewPosition.Z = LevelHeight / 2 - (Temp.Z / GridSize);
+	for (int32 i = 0; i < TheLayers.Num();i++)
+	{
+		if (TheLayers[i]->DestroyBlockAtPosition(TheNewPosition)) 
+		{
+			// Destroyed;
+			return;
+		}
+	}
+}
+
+void ALevelBlockConstructor::OptimiseLevelData(ETypeOfOptimization TheType, int32 CyclesPerLayer)
+{
+	TArray<uint8> TempTerrainBitData;
+	TempTerrainBitData.SetNumZeroed(LevelZLayerSize*LevelHeight);
+
+	// Assign the block data
+
+	for (int32 i = 0; i < TheLayers.Num();++i)
+	{
+		for (int32 j = 0; j < TheLayers[i]->TheSimpleBlocks.Num(); ++j)
+		{
+			TempTerrainBitData[(uint64)TheLayers[i]->TheSimpleBlocks[j].Position.Z*LevelZLayerSize +
+				(uint64)TheLayers[i]->TheSimpleBlocks[j].Position.X*LevelSize +
+				(uint64)TheLayers[i]->TheSimpleBlocks[j].Position.Y] = TheLayers[i]->LayerMaterialID;
+		}
+	}
+
+	/*
+
+
+	int32 NumOfProcessedCycles = 0;
+	if (TheType== ETypeOfOptimization::Horizontal)
+	{
+		uint8 SetValue = 0, LayerMaterialID;
+
+		UBlockLayer* CurrentItterLayer;
+		TArray<MegaBlockMetaData> PossibleMegaBlocks;
+
+		for (int32 ItterLayerID = 0; ItterLayerID < TheLayers.Num(); ItterLayerID++)
+		{
+			CurrentItterLayer = TheLayers[ItterLayerID];
+
+			NumOfProcessedCycles = 0;
+
+			LayerMaterialID = CurrentItterLayer->LayerMaterialID;
+			for (int32 z = 0; z < LevelHeight; ++z)
+			{
+				while(NumOfProcessedCycles<CyclesPerLayer || PossibleMegaBlocks.Num() < 1)
+				{
+					for (int32 x = 0; x < LevelSize - 1; ++x)
+					{
+						for (int32 y = 0; y < LevelSize - 1; ++y)
+						{
+							if (TempTerrainBitData[z*LevelZLayerSize + x*LevelSize + y] == LayerMaterialID
+								&& (TempTerrainBitData[z*LevelZLayerSize + x*LevelSize + y + 1] == LayerMaterialID
+									|| TempTerrainBitData[z*LevelZLayerSize + (x + 1)*LevelSize + y] == LayerMaterialID)
+								)
+							{
+								uint32 Temp_X1 = x, Temp_X2 = x, Temp_Y1 = y, Temp_Y2 = y;
+
+								bool bHorizontalEnd = false;
+								bool bVerticalEnd = false;
+
+								// Calculate size of possible MegaBlock
+								while (!bHorizontalEnd || !bVerticalEnd)
+								{
+									//	
+
+									if (!bHorizontalEnd)
+									{
+										if (LevelSize - Temp_X2 > 1 && CheckTerrainBitFilled_Horizontal_XDir(LayerMaterialID, z, Temp_X2 + 1, Temp_Y1, Temp_Y2))
+											++Temp_X2;
+										else bHorizontalEnd = true;
+									}
+
+									if (!bVerticalEnd)
+									{
+										if (LevelSize - Temp_Y2 > 1 && CheckTerrainBitFilled_Horizontal_YDir(LayerMaterialID, z, Temp_X1, Temp_X2, Temp_Y2 + 1))
+											++Temp_Y2;
+										else bVerticalEnd = true;
+									}
+								}
+								SizeX = 1 + Temp_X2 - Temp_X1;
+								SizeY = 1 + Temp_Y2 - Temp_Y1;
+
+								int32 BlockNumber = SizeX*SizeY;
+
+	
+								if (BlockNumber > 1)PossibleMegaBlocks.Add(MegaBlockMetaData(BlockNumber, z, z, Temp_X1, Temp_X2, Temp_Y1, Temp_Y2));
+							}
+						}
+
+
+					}
+					if (PossibleMegaBlocks.Num() > 0)
+					{
+
+						MegaBlockData TheMegaBlock;
+						uint32 AddMegaBlockID = 0;
+
+						for (int32 i = 0; i < PossibleMegaBlocks.Num(); i++)
+						{
+							// Bigger found
+							if (PossibleMegaBlocks[i].BlockNumber > PossibleMegaBlocks[AddMegaBlockID].BlockNumber)
+								AddMegaBlockID = i;
+						}
+
+						TheMegaBlock.Z1 = PossibleMegaBlocks[AddMegaBlockID].Z1;
+						TheMegaBlock.Z2 = PossibleMegaBlocks[AddMegaBlockID].Z2;
+
+						TheMegaBlock.X1 = PossibleMegaBlocks[AddMegaBlockID].X1;
+						TheMegaBlock.X2 = PossibleMegaBlocks[AddMegaBlockID].X2;
+
+						TheMegaBlock.Y1 = PossibleMegaBlocks[AddMegaBlockID].Y1;
+						TheMegaBlock.Y2 = PossibleMegaBlocks[AddMegaBlockID].Y2;
+
+						// Find Middle of cube
+						TheMegaBlock.Location.X = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].X2 + (float)PossibleMegaBlocks[AddMegaBlockID].X1)) / 2 * GridSize;
+						TheMegaBlock.Location.Y = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].Y2 + (float)PossibleMegaBlocks[AddMegaBlockID].Y1)) / 2 * GridSize;
+						TheMegaBlock.Location.Z = ((float)((float)z))*GridSize;
+
+
+						//CurrentItterLayer->TheMegaBlocks.Add(TheMegaBlock);
+						//CurrentItterLayer->Add
+
+						++NumOfProcessedCycles;
+						//////////////////////////////////////////////////////////////////////
+						for (uint32 x = PossibleMegaBlocks[AddMegaBlockID].X1; x <= PossibleMegaBlocks[AddMegaBlockID].X2; ++x)
+						{
+							for (uint32 y = PossibleMegaBlocks[AddMegaBlockID].Y1; y <= PossibleMegaBlocks[AddMegaBlockID].Y2; ++y)
+							{
+								if (TempTerrainBitData[z*LevelZLayerSize + x*LevelSize + y] == LayerMaterialID)
+								{
+									TempTerrainBitData[z*LevelZLayerSize + x*LevelSize + y] = 0;
+								}
+							}
+						}
+					}
+				}
+
+			}
+		}
+	}
+	else if (TheType == ETypeOfOptimization::Volumetic)
+	{
+
+	}
+	}*/
 }
 
 void ALevelBlockConstructor::OptimiseBitData(ETypeOfOptimization OptimizationType)
 {
+	if (TerrainBitData.Num() < 1)PrintLog("Empty Bit Data");
+	if (TheLayers.Num() < 1)PrintLog("No Layers");
 
 	if (!bOptimizing  && TerrainBitData.Num()>0 && TheLayers.Num()>0)
 	{
-		PrintLog(" Generate Simple Horizontal MegaBlocks  ");
+		//PrintLog(" Generate Simple Horizontal MegaBlocks  ");
 
 		bOptimizing = true;
 
 		FMegaBlockFinder::OptimizeData(TerrainBitData, this,OptimizationType);
 	}
+	else PrintLog("Currently Optimizing");
 }
-
-/*
-void ALevelBlockConstructor::OptimiseBitData_Volumetric()
-{
-
-	if (!bOptimizing  && TerrainBitData.Num()>0 && TheLayers.Num()>0)
-	{
-		PrintLog(" Generate Volumetic MegaBlocks  ");
-
-		bOptimizing = true;
-
-		FMegaBlockFinder::Optimize_Volumetic(TerrainBitData, this);
-	}
-}
-*/
 
 void ALevelBlockConstructor::SaveBlockData()
 {
-	//PrintLog("Save Data");
 
-	//TArray <BlockLayerSaveData> TheSaveData;
 	BlockConstructorSaveData TheSaveData(LevelSize,LevelHeight,GridSize);
+	TheSaveData.TheLayers.SetNumZeroed(TheLayers.Num());
 	for (int32 i = 0; i < TheLayers.Num();i++)
 	{
-		TheSaveData.TheLayers.Add(BlockLayerSaveData(TheLayers[i]->LayerMaterialID,TheLayers[i]->TheSimpleBlocks, TheLayers[i]->TheMegaBlocks));
+		TheSaveData.TheLayers[i]=BlockLayerSaveData(TheLayers[i]->LayerMaterialID,TheLayers[i]->TheSimpleBlocks, TheLayers[i]->TheMegaBlocks);
 	}
 
-	//BlockSaveData newSave(FinalBlockData,FinalMegaBlockData);
-	
 	FBufferArchive ToBinary;
 	ToBinary << TheSaveData;
 
@@ -333,10 +471,10 @@ void ALevelBlockConstructor::SaveBlockData()
 
 void ALevelBlockConstructor::LoadBlockData()
 {
-	//PrintLog("Load Data");
+
+	DestroyAll();
 
 	BlockConstructorSaveData TheSaveData;
-	//TArray<BlockLayerSaveData> TheSaveData;
 	TArray<uint8> TheBinaryArray;
 	if (!FFileHelper::LoadFileToArray(TheBinaryArray, *SaveFileDir))
 	{
@@ -344,10 +482,6 @@ void ALevelBlockConstructor::LoadBlockData()
 		return;
 		//~~
 	}
-
-	//Testing
-	//PrintLog("Loaded File Size");
-	//PrintLog(FString::FromInt(TheBinaryArray.Num()));
 
 	//File Load Error
 	if (TheBinaryArray.Num() <= 0) return;
@@ -366,8 +500,6 @@ void ALevelBlockConstructor::LoadBlockData()
 		UBlockLayer * NewLayer = CreateLayerWithID(TheSaveData.TheLayers[i].LayerMaterialID);
 		if (NewLayer) 
 		{
-			TheLayers.Add(NewLayer);
-
 			NewLayer->TheSimpleBlocks.SetNumZeroed(TheSaveData.TheLayers[i].SimpleBlocks_Core.Num());
 			for (int32 j = 0; j < TheSaveData.TheLayers[i].SimpleBlocks_Core.Num();++j)
 			{
@@ -387,74 +519,62 @@ void ALevelBlockConstructor::LoadBlockData()
 				NewLayer->TheMegaBlocks[j].Z1 = TheSaveData.TheLayers[i].MegaBlocks_Core[j].Z1;
 				NewLayer->TheMegaBlocks[j].Z2 = TheSaveData.TheLayers[i].MegaBlocks_Core[j].Z2;
 
+				NewLayer->TheMegaBlocks[j].CalculateLocation(GridSize);
+				/*
 				NewLayer->TheMegaBlocks[j].Location.X = ((float)((float)NewLayer->TheMegaBlocks[j].X2 + (float)NewLayer->TheMegaBlocks[j].X1)) / 2 * GridSize;
 				NewLayer->TheMegaBlocks[j].Location.Y = ((float)((float)NewLayer->TheMegaBlocks[j].Y2 + (float)NewLayer->TheMegaBlocks[j].Y1)) / 2 * GridSize;
-				NewLayer->TheMegaBlocks[j].Location.Z = ((float)((float)NewLayer->TheMegaBlocks[j].Z2 + (float)NewLayer->TheMegaBlocks[j].Z1)) / 2 * GridSize;
-					//(float)NewLayer->TheMegaBlocks[i].Z1* GridSize;
+				
+			//	NewLayer->TheMegaBlocks[j].Location.Z = (float)((float)NewLayer->TheMegaBlocks[j].Z1)  * GridSize;
 
+				if (NewLayer->TheMegaBlocks[j].Z2>NewLayer->TheMegaBlocks[j].Z1)
+					NewLayer->TheMegaBlocks[j].Location.Z = ((float)((float)NewLayer->TheMegaBlocks[j].Z2 + (float)NewLayer->TheMegaBlocks[j].Z1)) / 2 * GridSize;
+
+				else NewLayer->TheMegaBlocks[j].Location.Z = (float)((float)NewLayer->TheMegaBlocks[j].Z1* GridSize);
+				*/
 			}
 		}
-
 	}
-
-
 
 	FromBinary.FlushCache();
 
 	TheBinaryArray.Empty();
-
-	PrintLog("Load Success");
-	return ;
-
-	/*
-	*/
+	
+	//PrintLog("Load Success");
 }
 
 
-/*
-Save
-
-FBufferArchive ToBinary;
-
-ToBinary << (int) *TerraiBitData;
-
-//note that the supplied FString must be the entire Filepath
-// 	if writing it out yourself in C++ make sure to use the \\
-// 	for example:
-
-FString SavePath = "C:\\mysavefile.save";
-
-//Step 1: Variable Data -> Binary
-
-//following along from above examples
-
-//presumed to be global var data,
-//could pass in the data too if you preferred
-
-//No Data
-if (ToBinary.Num() <= 0) return;
-//~
-
-//Step 2: Binary to Hard Disk
-if (FFileHelper::SaveArrayToFile(ToBinary, *SavePath))
+void ALevelBlockConstructor::CreateLayersFromBitData()
 {
-// Free Binary Array
-ToBinary.FlushCache();
-ToBinary.Empty();
+	TArray<uint8> GenerateLayers;
 
-PrintLog("Save Success!");
-return;
+	uint64 LayerZSize = LevelSize*LevelSize;
+
+	// Find all Possible items
+	for (int32 z = 0; z < LevelHeight; ++z) 
+	{
+		for (int32 x = 0; x < LevelSize; ++x) 
+		{
+			for (int32 y = 0; y < LevelSize; ++y)
+			{
+				/*
+				if(TerrainBitData[LayerZSize*z + x*LevelSize + y])
+					GenerateLayers.AddUnique(TerrainBitData[LayerZSize*z + x*LevelSize + y]);
+		*/
+			
+				if (!Layers_ContainsID(GenerateLayers, TerrainBitData[LayerZSize*z + x*LevelSize + y])) 
+				{
+					Layers_ADD_ID(GenerateLayers, TerrainBitData[LayerZSize*z + x*LevelSize + y]);
+		
+				}
+			}
+		}
+	}
+
+	// Create layer for each
+	for (int32 i = 0; i < GenerateLayers.Num(); i++)
+		 CreateLayerWithID(GenerateLayers[i]);
+
 }
-
-// Free Binary Array
-ToBinary.FlushCache();
-ToBinary.Empty();
-
-PrintLog("File Could Not Be Saved!");
-
-
-
-*/
 
 void ALevelBlockConstructor::GenerateBitDataFromLevel()
 {
@@ -465,10 +585,12 @@ void ALevelBlockConstructor::GenerateBitDataFromLevel()
 	TerrainBitData.Empty();
 	LevelZLayerSize = LevelSize*LevelSize;
 	uint64 MemoryUsageSize = LevelZLayerSize*LevelHeight;
-	TerrainBitData.AddDefaulted(MemoryUsageSize);
+	TerrainBitData.SetNumZeroed(MemoryUsageSize);
+
 
 	for (int32 i = 0; i < TheLayers.Num();++i)
 	{
+		uint32 BitDataAssigned = 0;
 		// Simple Blocks
 		for (int32 j = 0; j < TheLayers[i]->TheSimpleBlocks.Num(); ++j)
 		{
@@ -476,33 +598,27 @@ void ALevelBlockConstructor::GenerateBitDataFromLevel()
 			TerrainBitData[TheLayers[i]->TheSimpleBlocks[j].Position.Z*LevelZLayerSize + 
 				LevelSize*TheLayers[i]->TheSimpleBlocks[j].Position.X +
 				TheLayers[i]->TheSimpleBlocks[j].Position.Y] = TheLayers[i]->LayerMaterialID;
-			
+			BitDataAssigned++;
 		}
-		// Simple Blocks
+		// Mega Blocks
 		for (int32 j = 0; j < TheLayers[i]->TheMegaBlocks.Num(); ++j)
 		{
-
-
-	
-			for (uint32 z = TheLayers[i]->TheMegaBlocks[j].Z1; z < TheLayers[i]->TheMegaBlocks[j].Z2; ++z )
+			for (uint32 z = TheLayers[i]->TheMegaBlocks[j].Z1; z <= TheLayers[i]->TheMegaBlocks[j].Z2; ++z )
 			{
-				for (uint32 x = TheLayers[i]->TheMegaBlocks[j].X1; x < TheLayers[i]->TheMegaBlocks[j].X2; ++x)
+				for (uint32 x = TheLayers[i]->TheMegaBlocks[j].X1; x <= TheLayers[i]->TheMegaBlocks[j].X2; ++x)
 				{
-					for (uint32 y = TheLayers[i]->TheMegaBlocks[j].Y1; y < TheLayers[i]->TheMegaBlocks[j].Y2; ++y)
+					for (uint32 y = TheLayers[i]->TheMegaBlocks[j].Y1; y <= TheLayers[i]->TheMegaBlocks[j].Y2; ++y)
 					{
 						TerrainBitData[z*LevelZLayerSize + LevelSize*x + y] = TheLayers[i]->LayerMaterialID;
+						BitDataAssigned++;
 					}
 				}
 			}
-			/*
-			*/
 		}
+		PrintLog("Layer: "+FString::FromInt(TheLayers[i]->LayerMaterialID)+"   :    Bit Assigned  - "+FString::FromInt(BitDataAssigned));
 	}
+
 	
-
-
-
-
 }
 
 
@@ -530,254 +646,32 @@ void ALevelBlockConstructor::BuildAllBlocks()
 		return;
 	}
 	
-
 	for (int32 i = 0; i < TheLayers.Num();i++)
 	{
 		TheLayers[i]->BuildAllBlocks();
 	}
-
-
-	/*
-	UBlockLayer* GenerateLayer = GetCurrentLayer();
-	if (GenerateLayer)
-	{
-		uint64 MegaBlockNum = 0;
-		uint64 BlockNum = 0;
-
-		uint32 VerticalSize = LevelHeight;
-		uint32 HorizontalSize = LevelSize;
-
-		FTransform SpawnPosition;
-
-		FVector CenteredOffset = GetActorLocation() - FVector(LevelSize, LevelSize, 0)*ConstructorGridSize / 2;
-		GenerateLayer->SetStaticMesh(BlockMesh);
-		GenerateLayer->SetMaterial(0, CurrentMaterial);
-		// Build MegaBlocks
-		for (int32 i = 0; i < FinalMegaBlockData.Num(); i++)
-		{
-			SpawnPosition.SetScale3D(FVector(FinalMegaBlockData[i].XScale, FinalMegaBlockData[i].YScale, FinalMegaBlockData[i].ZScale));
-			SpawnPosition.SetLocation(FinalMegaBlockData[i].Location + CenteredOffset);
-			GenerateLayer->AddInstance(SpawnPosition);
-			MegaBlockNum++;
-		}
-
-		SpawnPosition.SetScale3D(FVector(1, 1, 1));
-
-		for (int32 i = 0; i < FinalBlockData.Num(); i++)
-		{
-			SpawnPosition.SetLocation(
-				FVector(FinalBlockData[i].Position.X*ConstructorGridSize,
-					FinalBlockData[i].Position.Y*ConstructorGridSize,
-					FinalBlockData[i].Position.Z*ConstructorGridSize)
-				+ CenteredOffset);
-
-			GenerateLayer->AddInstance(SpawnPosition);
-			BlockNum++;
-		}
-
-		PrintLog("________________________________________________________ ");
-		PrintLog("----------------  Final Terrain Data  ------------------ ");
-		PrintLog("MegaBlocks Built  : " + FString::FromInt(MegaBlockNum));
-		PrintLog("Block Built   : " + FString::FromInt(BlockNum));
-		PrintLog("       [      " + FString::FromInt(MegaBlockNum + BlockNum) + "      ] ");
-		PrintLog("________________________________________________________ ");
-	}
-	*/
 }
 
 
 
 void ALevelBlockConstructor::BuildPureBitTerrain()
 {
-	/*
-	UBlockLayer* GenerateLayer = GetCurrentLayer();
-
-	if (GenerateLayer) 
-	{
-		FVector CenteredOffset = GetActorLocation() - FVector(LevelSize, LevelSize, 0)*ConstructorGridSize / 2;
-
-		uint32 VerticalSize = LevelHeight;
-		uint32 HorizontalSize = LevelSize;
-
-		uint64 BlocksNum = 0;
-		FTransform SpawnPosition;
-		SpawnPosition.SetScale3D(FVector(1, 1, 1));
-
-		for (uint32 x = 0; x < HorizontalSize; x++)
-		{
-			for (uint32 y = 0; y < HorizontalSize; y++)
-			{
-				for (uint8 h = 0; h < LevelHeight; h++)
-				{
-					int32 index = h*LevelZLayerSize + x*HorizontalSize + y;
-					if (TerrainBitData.IsValidIndex(index) && TerrainBitData[index])
-					{
-						BlocksNum++;
-						SpawnPosition.SetLocation(FVector(ConstructorGridSize*x, ConstructorGridSize*y, ConstructorGridSize*h) + CenteredOffset);
-						GenerateLayer->AddInstance(SpawnPosition);
-					}
-				}
-
-			}
-		}
-	}
-
-	*/
 }
 
-void  ALevelBlockConstructor::BuildMegaBlocks()
+
+UBlockLayer* ALevelBlockConstructor::CreateLayerWithID(const uint8& newLayerMaterialID)
 {
-	//	PrintLog("  BuildChuncks ");
-	/*
-
-	UBlockLayer* GenerateLayer = GetCurrentLayer();
-	if (GenerateLayer) 
-	{
-		uint64 MegaBlockNum = 0;
-
-		FVector CenteredOffset = GetActorLocation() - FVector(LevelSize, LevelSize, 0)*ConstructorGridSize / 2;
-		FTransform SpawnPosition;
-		for (int32 i = 0; i < FinalMegaBlockData.Num(); i++)
-		{
-			SpawnPosition.SetScale3D(FVector(FinalMegaBlockData[i].XScale, FinalMegaBlockData[i].YScale, FinalMegaBlockData[i].ZScale));
-			SpawnPosition.SetLocation(FinalMegaBlockData[i].Location + CenteredOffset);
-			GenerateLayer->AddInstance(SpawnPosition);
-			MegaBlockNum++;
-		}
-
-
-		PrintLog("MegaBlocks Built  : " + FString::FromInt(MegaBlockNum));
-	}
-	*/
-}
-
-void  ALevelBlockConstructor::BuildSimpleBlocks()
-{
-	/*
-	PrintLog(" BuildTerrain  ");
-
-	UBlockLayer* GenerateLayer = GetCurrentLayer();
-	FVector CenteredOffset = GetActorLocation() - FVector(LevelSize, LevelSize, 0)*ConstructorGridSize / 2;
-
-	uint32 VerticalSize = LevelHeight;// / 8;
-	uint32 HorizontalSize = LevelSize;// / 8;
-
-	uint64 BlocksNum = 0;
-	FTransform SpawnPosition;
-	SpawnPosition.SetScale3D(FVector(1, 1, 1));
-
-	for (int32 i = 0; i < FinalBlockData.Num(); i++)
-	{
-		SpawnPosition.SetLocation(
-			FVector(FinalBlockData[i].Position.X*ConstructorGridSize,
-				FinalBlockData[i].Position.Y*ConstructorGridSize,
-				FinalBlockData[i].Position.Z*ConstructorGridSize)
-			+ CenteredOffset);
-
-		GenerateLayer->AddInstance(SpawnPosition);
-		BlocksNum++;
-	}
-	
-	PrintLog("Blocks Built  : " + FString::FromInt(BlocksNum));
-	
-	*/
-	/*
-	 
-
-	for (uint32 x = 0; x < HorizontalSize; x++)
-	{
-		for (uint32 y = 0; y < HorizontalSize; y++)
-		{
-			for (uint8 h = 0; h < LevelHeight; h++)
-			{
-				int32 index = h*LevelZLayerSize + x*HorizontalSize + y;
-				if (TerrainBitData.IsValidIndex(index) && TerrainBitData[index])
-				{
-					BlocksNum++;
-					SpawnPosition.SetLocation(FVector(ConstructorGridSize*x, ConstructorGridSize*y, ConstructorGridSize*h));
-					GenerateLayer->AddInstance(SpawnPosition);
-				}
-			}
-
-		}
-	}
-	*/
-	
-}
-
-UBlockLayer* ALevelBlockConstructor::GetCurrentLayer()
-{
-	/*
-	UBlockLayer* GenerateLayer = nullptr;
-
-	for (int32 i = 0; i < TheLayers.Num(); i++)
-	{
-		if (TheLayers.IsValidIndex(i) && MaterialLayerID == TheLayers[i]->LayerID)
-		{
-			GenerateLayer = TheLayers[i];
-			break;
-		}
-	}
-
-	return GenerateLayer ? GenerateLayer : CreateLayer();
-	*/
-	return nullptr;
-}
-
-UBlockLayer* ALevelBlockConstructor::CreateLayer()
-{
-	/*
-	if (MaterialLayerID == 0) 
+	if (newLayerMaterialID == 0) 
 	{
 		PrintLog("Bad Layer ID");
 		return nullptr;
 	}
-	
-	
-	for (int32 i = 0; i < TheLayers.Num();i++)
-	{
-		if (TheLayers.IsValidIndex(i) && TheLayers[i]->LayerID == MaterialLayerID)
+	for (int32 i = 0; i < TheLayers.Num(); i++)
+		if (TheLayers[i]->LayerMaterialID == newLayerMaterialID) 
 		{
 			PrintLog("Layer Already Exists");
 			return nullptr;
 		}
-	}
-
-	if (!BlockMesh)return nullptr;
-
-	FString LayerName = FString("Layer  ") + FString::FromInt(TheLayers.Num()) + FString("   - ") + BlockMesh->GetName();
-
-	UBlockLayer* NewLayer = NewObject<UBlockLayer>(this, *LayerName);
-
-	if (!NewLayer)
-	{
-		PrintLog("Error With Spawn");
-		return nullptr;
-	}
-
-	NewLayer->RegisterComponent();
-	NewLayer->SetStaticMesh(BlockMesh);
-	//NewLayer->TheMesh = BlockMesh;
-//	NewLayer->TheMaterial = CurrentMaterial;
-	NewLayer->SetMaterial(0, CurrentMaterial);
-	NewLayer->LayerID = MaterialLayerID;
-//	NewLayer->Dimensions = LevelSize;
-	NewLayer->InitialiseBlocks();
-
-	return NewLayer;
-	
-	
-	*/
-	return nullptr;
-}
-
-UBlockLayer* ALevelBlockConstructor::CreateLayerWithID(uint8& newLayerMaterialID)
-{
-	if (newLayerMaterialID == 0)return nullptr;
-
-	UBlockLayer* ReturnLayer = nullptr;
-
-
 
 	UMaterialInstance* TheMatInstance=nullptr;
 
@@ -789,33 +683,33 @@ UBlockLayer* ALevelBlockConstructor::CreateLayerWithID(uint8& newLayerMaterialID
 			break;
 		}
 	}
+
+	if (!TheMatInstance)PrintLog("No Material");
+	if (!BlockMesh)PrintLog("No Mesh");
+
 	if (TheMatInstance && BlockMesh) 
 	{
 		FString LayerName = FString("Layer ID -  ") + FString::FromInt(newLayerMaterialID);
+		UBlockLayer* NewLayer = NewObject<UBlockLayer>(this, *LayerName);
 
-		ReturnLayer = NewObject<UBlockLayer>(this, *LayerName);
-
-		if (!ReturnLayer)
+		if (!NewLayer)
 		{
-			PrintLog("Error With Spawn");
-			return ReturnLayer;
+			PrintLog("Error With Layer Creation");
+			return NewLayer;
 		}
-		ReturnLayer->TheConstructor = this;
-		ReturnLayer->RegisterComponent();
-		ReturnLayer->SetStaticMesh(BlockMesh);
-		ReturnLayer->SetMaterial(0, TheMatInstance);
-		ReturnLayer->LayerMaterialID = newLayerMaterialID;
-
-		ReturnLayer->VerticalSize = LevelHeight;
-		ReturnLayer->HorizontalSize = LevelSize;
-		ReturnLayer->GridSize = GridSize;
+		NewLayer->Init(this,newLayerMaterialID, LevelSize, LevelHeight, GridSize);
+		NewLayer->RegisterComponent();
+		NewLayer->SetStaticMesh(BlockMesh);
+		NewLayer->SetMaterial(0, TheMatInstance);
+		TheLayers.Add(NewLayer);
+		//PrintLog("Layer Added to list");
 	}
 
 
-	return ReturnLayer;
+	return TheLayers.Last();
 }
 
-UBlockLayer* ALevelBlockConstructor::GetLayerWithID(uint8& LayerID)
+UBlockLayer* ALevelBlockConstructor::GetLayerWithID(const uint8& LayerID)const 
 {
 	for (int32 i = 0; i < TheLayers.Num();i++)
 	{
@@ -826,73 +720,33 @@ UBlockLayer* ALevelBlockConstructor::GetLayerWithID(uint8& LayerID)
 	return nullptr;
 }
 
-void ALevelBlockConstructor::SpawnNewBlock()
-{
-	//PrintLog("Spawn Object");
-	/*
-	FScopedTransaction Transaction(LOCTEXT("Create Block", "Spawn Block"));
-
-	Modify();
-
-	if (BlockMesh) 
-	{
-	
-		FTransform LayerTrasform;
-		LayerTrasform.SetLocation(FVector(0));
-
-		// Trying To add Mesh to layer
-		for (int32 i = 0; i < TheLayers.Num();i++)
-		{
-			if (TheLayers.IsValidIndex(i) && TheLayers[i]->TheMesh == BlockMesh)
-			{
-				FTransform FinalTranform;
-				FinalTranform = CurrentSelectionTransform;
-				FinalTranform.SetLocation(FinalTranform.GetLocation() + SpawnMeshRelativeTransform.GetLocation());
-				//TheLayers[i]->AddBlockInstance(FinalTranform, CurrentSelectionConstructorPostion);
-				return;
-			}
-		}
-	}
-	else PrintLog("Set Spawn Mesh");
-	*/
-}
-
-void ALevelBlockConstructor::DestroySelectedBlock()
-{
-	/*
-	FScopedTransaction Transaction(LOCTEXT("Create Block", "Spawn Block"));
-
-	Modify();
-
-
-	for (int32 i = 0; i < TheLayers.Layer.Num(); i++)
-	{
-		if (TheLayers.Layer.IsValidIndex(i))
-		{
-			TheLayers.Layer[i]->DestroyBlockInstance(CurrentSelectionConstructorPostion);
-		}
-	}
-	*/
-}
-
-
 void ALevelBlockConstructor::DestroyBitData()
 {
 	FMegaBlockFinder::ShutDown();
 	TerrainBitData.Empty();
-	//FinalBlockData.Empty();
-	//FinalMegaBlockData.Empty();
-
 	bOptimizing = false;
-
 }
 
-void ALevelBlockConstructor::DestroyLevelData()
+void ALevelBlockConstructor::DestroyLevelBlockData()
 {
 	FMegaBlockFinder::ShutDown();
 
-
 	TArray<UBlockLayer*> LayerComps;
+
+	for (int32 i = 0; i < TheLayers.Num(); i++)
+	{
+		if (TheLayers[i]) 
+		{
+			TheLayers[i]->ClearInstances();
+			TheLayers[i]->TheSimpleBlocks.Empty();
+			TheLayers[i]->TheMegaBlocks.Empty();
+			//TheLayers[i]->DestroyComponent();
+		}
+			
+	}
+
+	//TheLayers.Empty();
+
 	GetComponents(LayerComps);
 	if (LayerComps.Num() > 0)
 	{
@@ -902,25 +756,32 @@ void ALevelBlockConstructor::DestroyLevelData()
 			if (LayerComps.IsValidIndex(i) && LayerComps[i])
 			{
 				LayerComps[i]->ClearInstances();
-				LayerComps[i]->DestroyComponent();
+				TheLayers[i]->TheSimpleBlocks.Empty();
+				TheLayers[i]->TheMegaBlocks.Empty();
+				//LayerComps[i]->DestroyComponent();
 			}
 		}
 	}
-	for (int32 i = 0; i < TheLayers.Num(); i++)
-	{
-		if (TheLayers[i])
-			TheLayers[i]->DestroyComponent();
-	}
 
-	TheLayers.Empty();
 
 	bOptimizing = false;
 }
 
 void ALevelBlockConstructor::DestroyAll()
 {
-	DestroyLevelData();
 	DestroyBitData();
+	TArray<UBlockLayer*> LayerComps;
+
+	for (int32 i = 0; i < TheLayers.Num(); i++)
+		if (TheLayers[i])
+			TheLayers[i]->DestroyComponent();
+	TheLayers.Empty();
+
+	GetComponents(LayerComps);
+	if (LayerComps.Num() > 0)
+		for (int32 i = 0; i < LayerComps.Num(); i++)
+			if (LayerComps.IsValidIndex(i) && LayerComps[i])
+				LayerComps[i]->DestroyComponent();
 
 	bOptimizing = false;
 }
@@ -946,9 +807,6 @@ void ALevelBlockConstructor::GetLifetimeReplicatedProps(TArray< FLifetimePropert
 
 
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -967,9 +825,10 @@ void ALevelBlockConstructor::GetLifetimeReplicatedProps(TArray< FLifetimePropert
 FMegaBlockFinder::FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType) :
 	TheConstructor(newTheContructor),
 	OptimizationType(newOptimizationType),
+	TerrainBitData(newTerrainBitData),
 	StopTaskCounter(0)
 {
-	TerrainBitData = newTerrainBitData;
+	
 
 	const bool bAutoDeleteSelf = false;
 	const bool bAutoDeleteRunnable = false;
@@ -1096,7 +955,9 @@ uint32 FMegaBlockFinder::Run()
 
 		//SetValue = TheConstructor->TheLayers[ItterLayerID]->LayerID;
 		LayerMaterialID = CurrentItterLayer->LayerMaterialID;
-
+		//TheConstructor->TheLayers[ItterLayerID]->TheSimpleBlocks.Empty();
+	//	TheConstructor->TheLayers[ItterLayerID]->TheMegaBlocks.Empty();
+		//TheConstructor->TheLayers[ItterLayerID]->InstanceBodies.Empty();
 
 
 		////////////////////////////////////////////////////////////////////////////
@@ -1199,7 +1060,6 @@ uint32 FMegaBlockFinder::Run()
 					if (PossibleMegaBlocks.Num()>0)
 					{
 
-						MegaBlockData TheMegaBlock;
 						//MegaBlockMetaData AddMegaBlockMeta = PossibleMegaBlocks.Last();
 						uint32 AddMegaBlockID = 0;
 
@@ -1210,6 +1070,8 @@ uint32 FMegaBlockFinder::Run()
 								AddMegaBlockID = i;
 						}
 
+						MegaBlockData TheMegaBlock(PossibleMegaBlocks[AddMegaBlockID]);
+						/*
 						TheMegaBlock.Z1 = PossibleMegaBlocks[AddMegaBlockID].Z1;
 						TheMegaBlock.Z2 = PossibleMegaBlocks[AddMegaBlockID].Z2;
 
@@ -1219,16 +1081,17 @@ uint32 FMegaBlockFinder::Run()
 						TheMegaBlock.Y1 = PossibleMegaBlocks[AddMegaBlockID].Y1;
 						TheMegaBlock.Y2 = PossibleMegaBlocks[AddMegaBlockID].Y2;
 
-						/*
+						
 						TheMegaBlock.ZScale = 1;
 						TheMegaBlock.XScale = 1 + (float)PossibleMegaBlocks[AddMegaBlockID].X2 - (float)PossibleMegaBlocks[AddMegaBlockID].X1;
 						TheMegaBlock.YScale = 1 + (float)PossibleMegaBlocks[AddMegaBlockID].Y2 - (float)PossibleMegaBlocks[AddMegaBlockID].Y1;
-						*/
+					
 						// Find Middle of cube
 						TheMegaBlock.Location.X = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].X2 + (float)PossibleMegaBlocks[AddMegaBlockID].X1)) / 2 * GridSize;
 						TheMegaBlock.Location.Y = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].Y2 + (float)PossibleMegaBlocks[AddMegaBlockID].Y1)) / 2 * GridSize;
 						TheMegaBlock.Location.Z = ((float)((float)z))*GridSize;
-
+						*/
+						TheMegaBlock.CalculateLocation(GridSize);
 
 						CurrentItterLayer->TheMegaBlocks.Add(TheMegaBlock);
 						++TotalMegaBlocks;
@@ -1250,21 +1113,18 @@ uint32 FMegaBlockFinder::Run()
 					}
 				} while (PossibleMegaBlocks.Num() > 1);
 
-				TheConstructor->PrintLog("LayerZ Structuring: " + FString::FromInt(z));
+				TheConstructor->PrintLog("Layer ID : " + FString::FromInt(LayerMaterialID) + "      Z Layer Finished: " + FString::FromInt(z));
 			}
 		}
 		else  if (OptimizationType == ETypeOfOptimization::Volumetic)
 		{
 
 			TArray<MegaBlockMetaData> PossibleMegaBlocks;
-
-
 			// Find All Possible MegaBlocks
 			for (uint32 z = 0; z <LevelHeight - 1; z++)
 			{
 				do
 				{
-
 					PossibleMegaBlocks.Empty();
 					for (uint32 x = 0; x < LevelSize - 1; x++)
 					{
@@ -1325,8 +1185,7 @@ uint32 FMegaBlockFinder::Run()
 					{
 						//TheConstructor->PrintLog("Blocks Found: "+FString::FromInt(PossibleMegaBlocks.Num()));
 
-						MegaBlockData TheMegaBlock;
-						//MegaBlockMetaData AddMegaBlockMeta = PossibleMegaBlocks.Last();
+						
 						uint32 AddMegaBlockID = 0;
 
 						for (int32 i = 0; i < PossibleMegaBlocks.Num(); i++)
@@ -1335,55 +1194,35 @@ uint32 FMegaBlockFinder::Run()
 							if (PossibleMegaBlocks[i].BlockNumber > PossibleMegaBlocks[AddMegaBlockID].BlockNumber)
 								AddMegaBlockID = i;
 						}
+
+						MegaBlockData TheMegaBlock(PossibleMegaBlocks[AddMegaBlockID]);
+						/*
+						TheMegaBlock.Z1 = PossibleMegaBlocks[AddMegaBlockID].Z1;
+						TheMegaBlock.Z2 = PossibleMegaBlocks[AddMegaBlockID].Z2;
+
+						TheMegaBlock.X1 = PossibleMegaBlocks[AddMegaBlockID].X1;
+						TheMegaBlock.X2 = PossibleMegaBlocks[AddMegaBlockID].X2;
+
+						TheMegaBlock.Y1 = PossibleMegaBlocks[AddMegaBlockID].Y1;
+						TheMegaBlock.Y2 = PossibleMegaBlocks[AddMegaBlockID].Y2;
+						*/
+						TheMegaBlock.CalculateLocation(GridSize);
+
+						/*
 						TheMegaBlock.Location.X = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].X2 + (float)PossibleMegaBlocks[AddMegaBlockID].X1)) / 2 * GridSize;
 						TheMegaBlock.Location.Y = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].Y2 + (float)PossibleMegaBlocks[AddMegaBlockID].Y1)) / 2 * GridSize;
 						//TheMegaBlock.Location.Z = ((float)((float)z))*TheConstructor->GridSize;
 
-
+					
 						if (PossibleMegaBlocks[AddMegaBlockID].Z2>PossibleMegaBlocks[AddMegaBlockID].Z1)
-							TheMegaBlock.Location.Z = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].Y2 + (float)PossibleMegaBlocks[AddMegaBlockID].Y1)) / 2 * GridSize;
+							TheMegaBlock.Location.Z = ((float)((float)PossibleMegaBlocks[AddMegaBlockID].Z2 + (float)PossibleMegaBlocks[AddMegaBlockID].Z1)) / 2 * GridSize;
 
-						else TheMegaBlock.Location.Z = (float)(PossibleMegaBlocks[AddMegaBlockID].Z1* GridSize);
-						//if (PossibleMegaBlocks[AddMegaBlockID].Z2 > PossibleMegaBlocks[AddMegaBlockID].Z1)
-						//{
-						//	//TheMegaBlock.ZScale = (float)PossibleMegaBlocks[AddMegaBlockID].Z2 - (float)PossibleMegaBlocks[AddMegaBlockID].Z1 + 1;
-
-
-						//	TheMegaBlock.Location.Z = (((float)PossibleMegaBlocks[AddMegaBlockID].Z2 + (float)PossibleMegaBlocks[AddMegaBlockID].Z1) / 2)* TheConstructor->GridSize;
-
-						//	//TheLayersTheMegaBlock.Location.Z = PossibleMegaBlocks[AddMegaBlockID].Z1* TheConstructor->ConstructorGridSize;
-						//}
-						//else
-						//{
-						//	//TheMegaBlock.ZScale = 1;
-						//	TheMegaBlock.Location.Z = PossibleMegaBlocks[AddMegaBlockID].Z2* TheConstructor->GridSize;
-
-						//}
+						else TheMegaBlock.Location.Z = (float)((float)PossibleMegaBlocks[AddMegaBlockID].Z1* GridSize);	
+					
+							*/
+		
 
 
-						//if (PossibleMegaBlocks[AddMegaBlockID].X2 > PossibleMegaBlocks[AddMegaBlockID].X1)
-						//{
-						//	//TheMegaBlock.XScale = (float)PossibleMegaBlocks[AddMegaBlockID].X2 - (float)PossibleMegaBlocks[AddMegaBlockID].X1 + 1;
-						//	TheMegaBlock.Location.X = ((float)(PossibleMegaBlocks[AddMegaBlockID].X2 + PossibleMegaBlocks[AddMegaBlockID].X1)) / 2 * TheConstructor->GridSize;
-
-						//}
-						//else
-						//{
-						//	//TheMegaBlock.XScale = 1;
-						//	TheMegaBlock.Location.X = PossibleMegaBlocks[AddMegaBlockID].X2* TheConstructor->GridSize;
-						//}
-
-
-						//if (PossibleMegaBlocks[AddMegaBlockID].Y2 > PossibleMegaBlocks[AddMegaBlockID].Y1)
-						//{
-						//	//TheMegaBlock.YScale = (float)PossibleMegaBlocks[AddMegaBlockID].Y2 - (float)PossibleMegaBlocks[AddMegaBlockID].Y1 + 1;
-						//	TheMegaBlock.Location.Y = ((float)(PossibleMegaBlocks[AddMegaBlockID].Y2 + PossibleMegaBlocks[AddMegaBlockID].Y1)) / 2 * TheConstructor->GridSize;
-						//}
-						//else
-						//{
-						//	//TheMegaBlock.YScale = 1;
-						//	TheMegaBlock.Location.Y = PossibleMegaBlocks[AddMegaBlockID].Y2* TheConstructor->GridSize;
-						//}
 
 
 						CurrentItterLayer->TheMegaBlocks.Add(TheMegaBlock);
@@ -1399,10 +1238,7 @@ uint32 FMegaBlockFinder::Run()
 									if (TerrainBitData[CleanZ*LevelZLayerSize + CleanX*LevelSize + CleanY] == LayerMaterialID)
 
 									{
-										//TheMegaBlock.ThePositions.Add(ConstructorPosition(CleanX, CleanY, CleanZ));
-
 										TerrainBitData[CleanZ*LevelZLayerSize + CleanX*LevelSize + CleanY] = 0;
-										//TheConstructor->PrintLog("Block Cleaned" );
 									}
 								}
 							}
@@ -1410,7 +1246,7 @@ uint32 FMegaBlockFinder::Run()
 					}
 				} while (PossibleMegaBlocks.Num() > 0);
 
-				TheConstructor->PrintLog("LayerZ Finished: " + FString::FromInt(z));
+				TheConstructor->PrintLog("Layer : "+FString::FromInt(LayerMaterialID)+"   . Z Finished: " + FString::FromInt(z));
 
 			}
 		}
@@ -1429,14 +1265,7 @@ uint32 FMegaBlockFinder::Run()
 				}
 			}
 		}
-
-
-
-
 	}
-
-
-
 
 
 	if (TheConstructor)TheConstructor->bOptimizing = false;
@@ -1445,9 +1274,11 @@ uint32 FMegaBlockFinder::Run()
 	if (TheConstructor)
 	{
 		FTimespan EndTime = FDateTime::UtcNow() - StartTime;
-
-		TheConstructor->PrintLog("MegaBlocks Generated: " + FString::FromInt(TotalMegaBlocks));
-		TheConstructor->PrintLog("Blocks Left     : " + FString::FromInt(TotalSimpleBlocks));
+		TheConstructor->PrintLog(" ");
+		TheConstructor->PrintLog("MegaBlocks Generated        : " + FString::FromInt(TotalMegaBlocks));
+		TheConstructor->PrintLog("SimpleBlocks Generated      : " + FString::FromInt(TotalSimpleBlocks));
+		TheConstructor->PrintLog("--------------------------------------------------------------------- ");
+		TheConstructor->PrintLog("Total:                      : " + FString::FromInt(TotalMegaBlocks+TotalSimpleBlocks));
 		TheConstructor->PrintLog(" ");
 		TheConstructor->PrintLog("Time Taken :" + EndTime.ToString());
 	}

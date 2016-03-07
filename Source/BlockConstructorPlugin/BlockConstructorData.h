@@ -6,27 +6,12 @@
 #include "Object.h"
 #include "BlockConstructorData.generated.h"
 
-
-
 // Camera State Type
 UENUM(BlueprintType)
 enum class ETypeOfOptimization : uint8
 {
 	Horizontal UMETA(DisplayName = "Horizontal, Flat Terrain (Fast)"),
 	Volumetic UMETA(DisplayName = "Volumetic (Slow, Efficient)"),
-};
-
-// Camera State Type
-UENUM(BlueprintType)
-enum class EWay : uint8
-{
-	UP UMETA(DisplayName = "Up"),
-	DOWN UMETA(DisplayName = "Down"),
-	FORWARD UMETA(DisplayName = "Forward"),
-	BACKWARD UMETA(DisplayName = "Backward"),
-	LEFT UMETA(DisplayName = "Left"),
-	RIGHT UMETA(DisplayName = "Right"),
-
 };
 
 
@@ -37,11 +22,28 @@ public:
 	uint16 Y;
 	uint16 Z;
 	ConstructorPosition() {}
-	ConstructorPosition(uint16 GlobalPosition) :X(GlobalPosition), Y(GlobalPosition), Z(GlobalPosition)
-	{}
+	ConstructorPosition(const uint16& GlobalPosition) :X(GlobalPosition), Y(GlobalPosition), Z(GlobalPosition)	{}
 
-	ConstructorPosition(uint16 newX, uint16 newY, uint16 newZ) :X(newX), Y(newY), Z(newZ)
-	{}
+	ConstructorPosition(const uint16& newX, const uint16& newY, const uint16& newZ) :X(newX), Y(newY), Z(newZ){}
+
+	friend inline bool operator==(const ConstructorPosition& lhs, const ConstructorPosition& rhs) 
+	{                           
+		return ((lhs.X == rhs.X) && (lhs.Y == rhs.Y) && (lhs.Z == rhs.Z));
+	}
+	FString ToString()const 
+	{
+		FString PrintText = TEXT("x=") + FString::FromInt(X) + TEXT("  y=") + FString::FromInt(Y) + TEXT("   z=") + FString::FromInt(Z);
+		return PrintText;
+	}
+	/*
+	inline const TCHAR* ToString()const 
+	{
+	//	TEXT("MyCharacter's Health is %d"), MyCharacter->Health
+		//return (*(TEXT("x="),X)+ FString("y=%i", Y)+ FString("z=%i", Z)));
+		return *(TEXT("x=") + FString::FromInt((int32)X) + TEXT("y=") + FString::FromInt((int32)Y) + TEXT("  z=") + FString::FromInt((int32)Z));
+	}
+	
+	*/
 };
 
 FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition)
@@ -51,16 +53,13 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition)
 	return Ar;
 }
 
-
-
 struct SimpleBlockData 
 {
 public:
 	ConstructorPosition Position;
 	uint32 ArrayPosition;
 	SimpleBlockData() {}
-	SimpleBlockData(ConstructorPosition newPosition, uint32 newArrayPosition):Position(newPosition),ArrayPosition(newArrayPosition)
-	{}
+	SimpleBlockData(const ConstructorPosition& newPosition, const uint32 & newArrayPosition):Position(newPosition),ArrayPosition(newArrayPosition)	{}
 	
 };
 
@@ -71,33 +70,9 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, SimpleBlockData& TheBlock)
 }
 
 
-
-
-
-
-
-class MegaBlockMetaData 
-{
-public:
-	uint32 BlockNumber;
-	uint32 X1;
-	uint32 X2;
-	uint32 Y1;
-	uint32 Y2;
-	uint32 Z1;
-	uint32 Z2;
-
-	MegaBlockMetaData() {}
-	MegaBlockMetaData(uint32 newBlockNumber,uint32 newZ1,uint32 newZ2, uint32 newX1, uint32 newX2, uint32 newY1, uint32 newY2)
-		:BlockNumber(newBlockNumber),Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2)
-	{}
-};
-
-
 struct MegaBlockCoreData 
 {
 public:
-	//TArray<ConstructorPosition> ThePositions;
 	uint16 X1;
 	uint16 X2;
 	uint16 Y1;
@@ -107,15 +82,17 @@ public:
 
 
 	MegaBlockCoreData() {}
-	/*
-	MegaBlockCoreData(const MegaBlockData& TheBlock):
-		X1(TheBlock.X1), X2(TheBlock.X2), Y1(TheBlock.Y1), Y2(TheBlock.Y2), Z1(TheBlock.Z1), Z2(TheBlock.Z2)
-	{
-	}
-	*/
 	MegaBlockCoreData(const uint16& newZ1, const uint16 & newZ2,const uint16 & newX1, const uint16 & newX2,const uint16 & newY1, const uint16 & newY2)
-		:Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2)
+		:Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2){}
+
+	bool IsValid()const 
 	{
+		return (X2>=X1 && Y2>=Y1 && Z2>=Z1);
+	}
+
+	bool IsSingleBlock()const
+	{
+		return (X1 == X2 && Y1 == Y2 &&	Z1 == Z2);
 	}
 };
 FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock)
@@ -126,6 +103,19 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock)
 
 	return Ar;
 }
+
+
+class MegaBlockMetaData:public MegaBlockCoreData
+{
+public:
+	uint32 BlockNumber;
+
+	MegaBlockMetaData() {}
+
+	MegaBlockMetaData(const uint32 & newBlockNumber,const uint16 & newZ1, const uint16& newZ2, const uint16& newX1, const uint16&  newX2, const uint16 &  newY1, const uint16& newY2)
+		:MegaBlockCoreData(newZ1,newZ2,newX1,newX2,newY1,newY2), BlockNumber(newBlockNumber){}
+
+};
 
 
 
@@ -139,26 +129,20 @@ public:
 
 	MegaBlockData() {}
 
-	/*
-	MegaBlockData(const MegaBlockCoreData NewMegaCoreData)
+	MegaBlockData(const MegaBlockCoreData& NewData)
+		:MegaBlockCoreData(NewData.Z1,NewData.Z2,NewData.X1, NewData.X2, NewData.Y1, NewData.Y2){}
+
+	MegaBlockData(const MegaBlockMetaData& NewData)
+		:MegaBlockCoreData(NewData.Z1, NewData.Z2, NewData.X1, NewData.X2, NewData.Y1, NewData.Y2){}
+
+	void CalculateLocation(const uint16& GridSize)
 	{
-		Z1 = NewMegaCoreData.Z1;
-		Z2 = NewMegaCoreData.Z2;
-
-		X1 = NewMegaCoreData.X1;
-		X2 = NewMegaCoreData.X2;
-
-		Y1 = NewMegaCoreData.Y1;
-		Y2 = NewMegaCoreData.Y2;
+		Location.X = ((float)((float)X2 + (float)X1)) / 2 * GridSize;
+		Location.Y = ((float)((float)Y2 + (float)Y1)) / 2 * GridSize;
+		if (Z2>Z1)
+			Location.Z = ((float)((float)Z2 + (float)Z1)) / 2 * GridSize;
+		else Location.Z = (float)((float)Z1* GridSize);
 	}
-
-	*/
-	/*
-	MegaBlockData(uint16 newZ1, uint16 newZ2, uint16 newX1, uint16 newX2, uint16 newY1, uint16 newY2)
-		:Z1(newZ1), Z2(newZ2), X1(newX1), X2(newX2), Y1(newY1), Y2(newY2)
-	{
-	}
-	*/
 };
 /*
 FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockData& TheBlock)
@@ -190,7 +174,7 @@ public:
 		MegaBlocks_Core.SetNumUninitialized(newMegaBlocks.Num());
 		for (int32 i = 0; i < newMegaBlocks.Num(); i++)
 		{
-			MegaBlocks_Core[i] = MegaBlockCoreData( newMegaBlocks[i].Z1, newMegaBlocks[i].Z2, 
+			MegaBlocks_Core[i] = MegaBlockCoreData(	newMegaBlocks[i].Z1, newMegaBlocks[i].Z2, 
 													newMegaBlocks[i].X1, newMegaBlocks[i].X2, 
 													newMegaBlocks[i].Y1, newMegaBlocks[i].Y2 );
 		}
@@ -221,15 +205,17 @@ public:
 	uint16 LevelHeight = 0;
 	uint16 GridSize = 0;
 	BlockConstructorSaveData() {}
-	BlockConstructorSaveData( const int32&newLevelSize, const int32& newLevelHeight, const float& newGridSize) :
+	BlockConstructorSaveData( const uint16&newLevelSize, const uint16& newLevelHeight, const uint16& newGridSize) :
 		LevelSize(newLevelSize),
-		GridSize(newGridSize)
+		GridSize(newGridSize),
+		LevelHeight(newLevelHeight)
 	{
 	}
 
 	BlockConstructorSaveData(const TArray<BlockLayerSaveData> newTheLayers,const int32&newLevelSize, const int32& newLevelHeight, const float& newGridSize ):
 		 TheLayers(newTheLayers),
 		 LevelSize(newLevelSize),
+		LevelHeight(newLevelHeight),
 		GridSize(newGridSize)
 	{
 	}

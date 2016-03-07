@@ -28,52 +28,24 @@ public:
 
 	// Generate Bit Data From Texture
 	FReply GenerateBitDataFromTexture();
+	FReply GenerateBitDataFromLevel();
 
-	FReply CreateLayersFromBitData();
 
 	FReply OptimiseBitData_Horizontal();
 	FReply OptimiseBitData_Volumetical();
 
 
 	FReply DestroyBitData();
-	FReply DestroyLevelData();
+	FReply DestroyLevelBlockData();
 	FReply DestroyEverything();
 
-	FReply BuildMegaBlocks();
-	FReply BuildSimpleBlocks();
 	FReply BuildPureBitTerrain();
 
 	FReply BuildBlockArrayData();
 
-	FReply GenerateBitDataFromLevel();
-
-
 	FReply SaveData();
 	FReply LoadData();
 
-
-	/*
-
-
-
-	FReply MoveSelection(uint8 MoveWay);
-	FReply MoveSelectedBlock(uint8 MoveWay);
-	FReply SpawnBlock();
-	FReply DestroyBlock();
-
-	FReply GenerateTerrain();
-
-
-
-
-
-	FReply ReserveBitData();
-	FReply LoadTextureRawData();
-	FReply GenerateHeightBitData();
-	FReply GenerateBigMegaBlocks();
-
-
-	*/
 
 	static TSharedRef<IDetailCustomization> MakeInstance();
 

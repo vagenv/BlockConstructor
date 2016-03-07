@@ -16,21 +16,20 @@ ALevelBlockConstructor* TheInstance = nullptr;
 FLevelBlockConstructorDetails::FLevelBlockConstructorDetails()
 {
 
-	BigBlackTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 17));
+	BigBlackTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 20));
 	BigBlackTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::Black));
-//	BigBlackTextStyle.
+
+	MediumBlackTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 13));
+	MediumBlackTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::Black));
 
 
 	BigRedTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 17));
 	BigRedTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::Red));
 
 
-
 	BigWhiteTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 17));
 	BigWhiteTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::White));
 
-	MediumBlackTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 13));
-	MediumBlackTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::Black));
 
 	MediumWhiteTextStyle.SetFont(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Bold.ttf"), 13));
 	MediumWhiteTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor::White));
@@ -69,7 +68,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 	if (!TheInstance)return;
 
 	DetailBuilder.EditCategory("System", FText::GetEmpty(), ECategoryPriority::Important);
-	DetailBuilder.EditCategory("Texture to Terrain", FText::GetEmpty(), ECategoryPriority::Important);
+	DetailBuilder.EditCategory("Bit Data Generation", FText::GetEmpty(), ECategoryPriority::Important);
 	DetailBuilder.EditCategory("Terrain Bit Data Manipulation", FText::GetEmpty(), ECategoryPriority::Important);
 	DetailBuilder.EditCategory("Save", FText::GetEmpty(), ECategoryPriority::Important);
 
@@ -146,57 +145,39 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 
 	//  Texture to Terrain
 
-	IDetailCategoryBuilder& TextureToTerrainCategory = DetailBuilder.EditCategory("Texture to Terrain", FText::GetEmpty(), ECategoryPriority::Default);
+	IDetailCategoryBuilder& BitDataGenerationCateory = DetailBuilder.EditCategory("Bit Data Generation", FText::GetEmpty(), ECategoryPriority::Default);
 
 
-	/*
-	TextureToTerrainCategory
+	BitDataGenerationCateory
 		.AddCustomRow(FText::GetEmpty())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
-			.HeightOverride(35)
-			[
-				SNew(STextBlock)
-				.Text(LOCTEXT("  Some Subgroup  ", "  Some Subgroup  "))
-				.TextStyle(&BigWhiteTextStyle)
-				//.OnClicked(this, &FLevelBlockConstructorDetails::GenerateBitDataFromTexture)
-				SNew(STextBlock)
-				.TextStyle(&BigRedTextStyle)
-				.Text(LOCTEXT("New Start", "New End")
-			]
-		];
-		*/
-//	TextureToTerrainCategory.AddProperty("GenerateTerrainHeight", NewInts->GetClass(), TEXT(" GenerateTerrainHeight"), EPropertyLocation::Advanced);
-
-	/*
-	 			SNew(SBox)
-			.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		.HeightOverride(30)
-		[
-			SNew(STextBlock)
-			.TextStyle(&BigRedTextStyle)
-		.Text(LOCTEXT("New Start", "New End")
-
-
-	 */
-
-	TextureToTerrainCategory
-		.AddCustomRow(FText::GetEmpty())
-		[
-			SNew(SBox)
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.HeightOverride(35)
+			.HeightOverride(45)
 			[
 				SNew(SButton)
-				.Text(LOCTEXT("  Generate Data from Texture  ", "  Generate Bit Data from Texture  "))
+				.Text(LOCTEXT("  Generate Bit Data from Texture  ", "  Generate Bit Data from Texture  "))
 				.TextStyle(&BigBlackTextStyle)
 				.OnClicked(this, &FLevelBlockConstructorDetails::GenerateBitDataFromTexture)
 			]
 		];
+	/*
+	BitDataGenerationCateory
+		.AddCustomRow(FText::GetEmpty())
+		[
+			SNew(SBox)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.HeightOverride(45)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("  Generate Bit Data from Level  ", "  Generate Bit Data from Level  "))
+			.TextStyle(&BigBlackTextStyle)
+			.OnClicked(this, &FLevelBlockConstructorDetails::GenerateBitDataFromLevel)
+			]
+		];
+		*/
 
 
 	IDetailCategoryBuilder& TerrainManipulationCategory = DetailBuilder.EditCategory("Terrain Bit Data Manipulation", FText::GetEmpty(), ECategoryPriority::Default);
@@ -242,7 +223,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 				SNew(SBox)
 				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Fill)
-				.HeightOverride(40)
+				.HeightOverride(45)
 				[
 					
 							SNew(SHorizontalBox)
@@ -295,7 +276,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 			SNew(SBox)
 				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Fill)
-				.HeightOverride(40)
+				.HeightOverride(45)
 				[
 					SNew(SHorizontalBox)
 						+SHorizontalBox::Slot()
@@ -305,36 +286,11 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 					
 							[
 								SNew(SButton)
-									.Text(LOCTEXT(" Build All ", " Build All "))
+									.Text(LOCTEXT(" Build Blocks ", " Build Blocks "))
 									.TextStyle(&BigBlackTextStyle)
 									.OnClicked(this, &FLevelBlockConstructorDetails::BuildBlockArrayData)
 							]
-					+ SHorizontalBox::Slot()
-							.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-							.HAlign(HAlign_Fill)
-							.VAlign(VAlign_Fill)
-							[
-								SNew(SVerticalBox)
-										+ SVerticalBox::Slot()
-											//.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-											.HAlign(HAlign_Fill)
-											.VAlign(VAlign_Fill)
-											[
-												SNew(SButton)
-												.Text(LOCTEXT(" Simple Blocks ", " Simple Blocks "))
-												.OnClicked(this, &FLevelBlockConstructorDetails::BuildSimpleBlocks)
-											] 
-										+ SVerticalBox::Slot()
-											//.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-											.HAlign(HAlign_Fill)
-											.VAlign(VAlign_Fill)
-											[
-												SNew(SButton)
-												.Text(LOCTEXT(" Mega Blocks ", " Mega Blocks "))
-												.OnClicked(this, &FLevelBlockConstructorDetails::BuildMegaBlocks)
-											] 
-							] 
-					]
+				]
 		];
 
 
@@ -399,9 +355,9 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 												.VAlign(VAlign_Fill)
 												[
 													SNew(SButton)
-													.Text(LOCTEXT(" Destroy Level Data ", " Destroy Level Data "))
+													.Text(LOCTEXT(" Destroy Block Data ", " Destroy Block Data "))
 													//.TextStyle(&MediumBlackTextStyle)
-													.OnClicked(this, &FLevelBlockConstructorDetails::DestroyLevelData)
+													.OnClicked(this, &FLevelBlockConstructorDetails::DestroyLevelBlockData)
 												]
 								] 
 				]
@@ -427,89 +383,6 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 	 */
 
 
-
-	/*TerrainGenerationCategory
-		.AddCustomRow(FText::GetEmpty())
-		[
-				SNew(SVerticalBox)
-					+SVerticalBox::Slot()
-						.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot()
-										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-										.HAlign(HAlign_Fill)
-										.VAlign(VAlign_Fill)
-										[
-											SNew(SButton)
-											.Text(LOCTEXT("Horizontal Optimization ", "  Horizontal Optimization  "))
-											.OnClicked(this, &FLevelBlockConstructorDetails::OptimiseBitData_Horizontal)
-										]
-									+ SHorizontalBox::Slot()
-										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-										.HAlign(HAlign_Fill)
-										.VAlign(VAlign_Fill)
-										[
-											SNew(SButton)
-											.Text(LOCTEXT(" Volumetic Optimization", "  Volumetic Optimization  "))
-										.OnClicked(this, &FLevelBlockConstructorDetails::OptimiseBitData_Volumetical)
-										]
-						]	
-					+SVerticalBox::Slot()
-						.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-								SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot()
-										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-										.HAlign(HAlign_Fill)
-										.VAlign(VAlign_Fill)
-										[
-											SNew(SButton)
-											.Text(LOCTEXT(" Build MegaBlocks ", " Build MegaBlocks   "))
-										.OnClicked(this, &FLevelBlockConstructorDetails::BuildChuncks)
-										]
-									+ SHorizontalBox::Slot()
-										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-										.HAlign(HAlign_Fill)
-										.VAlign(VAlign_Fill)
-										[
-											SNew(SButton)
-											.Text(LOCTEXT("  Build Blocks ", "  Build Blocks  "))
-										.OnClicked(this, &FLevelBlockConstructorDetails::BuildTerrain)
-										] 
-									+ SHorizontalBox::Slot()
-										.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-										.HAlign(HAlign_Fill)
-										.VAlign(VAlign_Fill)
-										[
-											SNew(SButton)
-											.Text(LOCTEXT("  Build Pure Bit Data", "  Build Pure Bit Data  "))
-										.OnClicked(this, &FLevelBlockConstructorDetails::BuildPureBitTerrain)
-										]
-						]
-					+SVerticalBox::Slot()
-						.Padding(1.0f, 1.0f, 1.0f, 1.0f)
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							SNew(SButton)
-							.Text(LOCTEXT(" Build ", " Build All  "))
-						.OnClicked(this, &FLevelBlockConstructorDetails::BuildBitData)
-						]	
-		];*/
-
-
-
-
-
-
-
-
-
 		IDetailCategoryBuilder& SaveCategory = DetailBuilder.EditCategory("Save", FText::GetEmpty(), ECategoryPriority::Important);
 
 
@@ -522,7 +395,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 							.VAlign(VAlign_Fill)
 							[
 								SNew(SBox)
-								.HeightOverride(35)
+								.HeightOverride(45)
 								[
 
 									SNew(SHorizontalBox)
@@ -626,11 +499,9 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 }
 
 
-
 void FLevelBlockConstructorDetails::SaveTextChanged(const FText& NewText, ETextCommit::Type TextType)
 {
 	if (TheInstance)TheInstance->SaveFileDir= NewText.ToString();
-	//return FReply::Handled();
 }
 
 
@@ -641,12 +512,12 @@ FReply  FLevelBlockConstructorDetails::GenerateBitDataFromTexture()
 	if (TheInstance)TheInstance->GenerateBitDataFromTexture();
 	return FReply::Handled();
 }
-
-FReply FLevelBlockConstructorDetails::CreateLayersFromBitData()
+FReply  FLevelBlockConstructorDetails::GenerateBitDataFromLevel()
 {
-	if (TheInstance)TheInstance->CreateLayersFromBitData();
+	if (TheInstance)TheInstance->GenerateBitDataFromLevel();
 	return FReply::Handled();
 }
+
 
 FReply  FLevelBlockConstructorDetails::OptimiseBitData_Horizontal()
 {
@@ -665,10 +536,9 @@ FReply  FLevelBlockConstructorDetails::BuildBlockArrayData()
 	if (TheInstance)TheInstance->BuildAllBlocks();
 	return FReply::Handled();
 }
-
-FReply FLevelBlockConstructorDetails::GenerateBitDataFromLevel()
+FReply FLevelBlockConstructorDetails::BuildPureBitTerrain()
 {
-	if (TheInstance)TheInstance->GenerateBitDataFromLevel();
+	if (TheInstance)TheInstance->BuildPureBitTerrain();
 	return FReply::Handled();
 }
 
@@ -680,63 +550,13 @@ FReply FLevelBlockConstructorDetails::SaveData()
 
 FReply FLevelBlockConstructorDetails::LoadData()
 {
-	if (TheInstance)TheInstance->LoadBlockData();
-	return FReply::Handled();
-}
-
-FReply  FLevelBlockConstructorDetails::BuildMegaBlocks()
-{
-	if (TheInstance)TheInstance->BuildMegaBlocks();
-	return FReply::Handled();
-}
-
-FReply  FLevelBlockConstructorDetails::BuildSimpleBlocks()
-{
-	if (TheInstance)TheInstance->BuildSimpleBlocks();
-	return FReply::Handled();
-}
-
-FReply FLevelBlockConstructorDetails::BuildPureBitTerrain()
-{
+	if (TheInstance)
 	{
-		if (TheInstance)TheInstance->BuildPureBitTerrain();
-		return FReply::Handled();
+		TheInstance->LoadBlockData();
+		TheInstance->GenerateBitDataFromLevel();
 	}
-}
-
-
-
-/*
-
-
-
-FReply  FLevelBlockConstructorDetails::ReserveBitData()
-{
-	if (TheInstance)TheInstance->ReserveBitData();
 	return FReply::Handled();
 }
-
-
-FReply  FLevelBlockConstructorDetails::LoadTextureRawData()
-{
-	if (TheInstance)TheInstance->LoadTextureRawData();
-	return FReply::Handled();
-}
-
-FReply  FLevelBlockConstructorDetails::GenerateHeightBitData()
-{
-	if (TheInstance)TheInstance->GenerateHeightBitData();
-	return FReply::Handled();
-}
-
-FReply  FLevelBlockConstructorDetails::GenerateBigMegaBlocks()
-{
-	if (TheInstance)TheInstance->GenerateBigMegaBlocks();
-	return FReply::Handled();
-}
-
-
-*/
 
 
 FReply FLevelBlockConstructorDetails::DestroyEverything()
@@ -751,47 +571,12 @@ FReply FLevelBlockConstructorDetails::DestroyBitData()
 	return FReply::Handled();
 }
 
-FReply FLevelBlockConstructorDetails::DestroyLevelData()
+FReply FLevelBlockConstructorDetails::DestroyLevelBlockData()
 {
-	if (TheInstance)TheInstance->DestroyLevelData();
+	if (TheInstance)TheInstance->DestroyLevelBlockData();
 	return FReply::Handled();
 }
 
-
-
-/*
-
-
-
-FReply FLevelBlockConstructorDetails::MoveSelection(uint8 MoveWay)
-{
-	if (TheInstance)TheInstance->MoveSelection((EWay)MoveWay);
-	return FReply::Handled();
-}
-FReply FLevelBlockConstructorDetails::MoveSelectedBlock(uint8 MoveWay) 
-{
-	if (TheInstance)TheInstance->MoveSelection((EWay)MoveWay);
-	return FReply::Handled();
-}
-
-FReply FLevelBlockConstructorDetails::SpawnBlock()
-{
-	if (TheInstance)TheInstance->SpawnNewBlock();
-	return FReply::Handled();
-}
-
-FReply FLevelBlockConstructorDetails::DestroyBlock()
-{
-	if (TheInstance)TheInstance->DestroySelectedBlock();
-	return FReply::Handled();
-}
-
-FReply FLevelBlockConstructorDetails::GenerateTerrain()
-{
-	//if (TheInstance)TheInstance->GenerateTerrain();
-	return FReply::Handled();
-}
-*/
 
 FReply FLevelBlockConstructorDetails::ExecuteToolCommand(IDetailLayoutBuilder* DetailBuilder, FString MethodsToExecute)
 {

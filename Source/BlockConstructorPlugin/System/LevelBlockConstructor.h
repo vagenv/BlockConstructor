@@ -77,19 +77,19 @@ public:
 	//						Generate Terrain From texture
 
 	// Maximum height of Terrain 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Texture to Terrain")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bit Data Generation")
 		int32 GenerateTerrainHeight = 64;
 
 	// Terrain HeightMap
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Texture to Terrain")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bit Data Generation")
 		UTexture2D* GenerateTerrainHeightmap;
 
 	// Generate Terrain Material
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Texture to Terrain")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bit Data Generation")
 		UMaterialInstance* GenerateTerrainMaterial;
 
 	// Selected Terrain Material ID
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Texture to Terrain")
+	UPROPERTY()//VisibleAnywhere, BlueprintReadOnly, Category = "Bit Data Generation")
 		int32 CurrentMaterialID = 0;
 
 
@@ -118,9 +118,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 		bool bOptimizing = false;
 
-
-
-	
+		
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,15 +126,21 @@ public:
 
 
 	// Current Block Layer Component list
-	UPROPERTY()
+	//UPROPERTY()
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 		TArray<class UBlockLayer*>  TheLayers;
 
 	// Create Layers from current Terrain Bit Data
 	void CreateLayersFromBitData();
 
+
+//	UFUNCTION(BlueprintCallable, Category = "Layer")
+		bool IsPositionBusy(const ConstructorPosition & ThePosition)const;
+
 	// Finds if ID is in Terrain Array
 	FORCEINLINE bool Layers_ContainsID(TArray<uint8>& TheGenerateLayers, uint8 & ID)
 	{
+		if (ID == 0)return true;
 		for (int32 i = 0; i < TheGenerateLayers.Num();i++)
 		{
 			if (TheGenerateLayers[i] == ID)
@@ -151,6 +155,7 @@ public:
 	// Add ID to sorted Terrain Array
 	FORCEINLINE void Layers_ADD_ID(TArray<uint8>& TheGenerateLayers, uint8& ID)
 	{
+		if (ID == 0)return;
 		for (int32 i = 0; i < TheGenerateLayers.Num(); i++)
 		{
 			if (TheGenerateLayers[i] > ID) 
@@ -164,29 +169,24 @@ public:
 	}
 
 
-
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						Core Events
 
 
 
+	UFUNCTION(BlueprintCallable, Category = "Save")
+		void AddBlockAtLocation(FVector Location, uint8 LayerID);
+	UFUNCTION(BlueprintCallable, Category = "Save")
+		void DestroyBlockAtLocaiton(FVector Location);
+
+	UFUNCTION(BlueprintCallable, Category = "Optimization")
+		void OptimiseLevelData(ETypeOfOptimization TheType,int32 CyclesPerLayer);
 
 
 
 	// Optimize Horizontally.   Flat Terrain
 	void OptimiseBitData(ETypeOfOptimization OptimizationType=ETypeOfOptimization::Horizontal );
-
-	// Optimize Volumetically.  3D Terrain.
-//	void OptimiseBitData_Volumetric();
-
-
-
-	// Build Simple Block Data
-	void BuildSimpleBlocks();
-
-	// Spawn Mega Blocks
-	void BuildMegaBlocks();
 
 	// Build All Blocks
 	void BuildAllBlocks();
@@ -200,12 +200,6 @@ public:
 	// Generate Bit Data from Current Blocks
 	void GenerateBitDataFromLevel();
 
-	// Under Question
-
-
-
-
-
 
 	void CheckOptimizationThread();
 
@@ -214,78 +208,16 @@ public:
 	////////////////////////////////
 
 
+	class UBlockLayer* CreateLayerWithID(const uint8& LayerID);
+	class UBlockLayer* GetLayerWithID(const uint8& LayerID)const ;
 
 
-
-
-
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//					Thread Control
-	
-
-
-
-
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//									Data
-
-	//UPROPERTY()
-
-
-
-	//bool CheckTerrainBitFilled_Box(uint32 Z, uint32 X1, uint32 X2, uint32 Y1, uint32 Y2);
-
-	
-
-
-		//FByteBulkData* RawImageData;
-	//	FColor* FormatedImageData;
-
-
-	FTransform CurrentSelectionTransform;
-
-//	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-//		UBoxComponent * SelectionBox;
-
-
-	class UBlockLayer* GetCurrentLayer();
-	class UBlockLayer* CreateLayer();
-
-	class UBlockLayer* CreateLayerWithID(uint8& LayerID);
-	class UBlockLayer* GetLayerWithID(uint8& LayerID);
-
-	// Selection
-	void MoveSelection(EWay MoveWay);
-	void UpdateDrawSelectionBox();
-
-	void MoveSelectedBlock(EWay MoveWay);
-
-	void SpawnNewBlock();
-	void DestroySelectedBlock();
 
 
 	void DestroyBitData();
-	void DestroyLevelData();
+	void DestroyLevelBlockData();
 	void DestroyAll();
 
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//						Gameplay
-
-
-	//UFUNCTION(Exec)
-		void EmptyFunc();
-
-	// Save Block on End of Game ?
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Option")
-		bool bSaveLoadBlocks = false;
 
 	static void PrintLog(FString Message);
 };
@@ -318,7 +250,7 @@ class FMegaBlockFinder : public FRunnable
 	FDateTime StartTime;
 
 
-	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Horizontal_XDir(uint8& LayerID, uint32& Z, uint32 X, uint32& Y1, uint32& Y2)const
+	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_XDir(uint8& LayerID, uint32& Z, uint32 X, uint32& Y1, uint32& Y2)const
 	{
 		for (uint32 i = Y1; i <= Y2; ++i)
 			if (TerrainBitData[LevelZLayerSize*Z + X*LevelSize + i] != LayerID)
@@ -326,7 +258,7 @@ class FMegaBlockFinder : public FRunnable
 		return true;
 	}
 
-	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Horizontal_YDir(uint8& LayerID, uint32& Z, uint32& X1, uint32& X2, uint32 Y)const
+	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_YDir(uint8& LayerID, uint32& Z, uint32& X1, uint32& X2, uint32 Y)const
 	{
 		for (uint32 i = X1; i <= X2; ++i)
 			if (TerrainBitData[LevelZLayerSize*Z + i*LevelSize + Y] != LayerID)
@@ -336,7 +268,7 @@ class FMegaBlockFinder : public FRunnable
 
 
 
-	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Volumetric_XDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const
+	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_XDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const
 	{
 
 		for (uint32 z = Z1; z <= Z2; z++)
@@ -346,7 +278,7 @@ class FMegaBlockFinder : public FRunnable
 		return true;
 	}
 
-	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Volumetric_YDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const
+	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_YDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const
 	{
 
 		for (uint32 z = Z1; z <= Z2; z++)
@@ -357,7 +289,7 @@ class FMegaBlockFinder : public FRunnable
 		return true;
 	}
 
-	FORCEINLINE bool FMegaBlockFinder::CheckTerrainBitFilled_Volumetric_ZDir(uint8& LayerID, uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const
+	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_ZDir(uint8& LayerID, uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const
 	{
 		for (uint32 x = X1; x <= X2; ++x)
 			for (uint32 y = Y1; y <= Y2; ++y)
