@@ -7,7 +7,7 @@
 #include "LevelBlockConstructor.generated.h"
 
 
-
+static uint32 RenderDistance = 3000;
 
 
 // Block Constructor. Actor that holds, Constructs and Deconstructs Blocks
@@ -51,8 +51,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 		int32 LevelHeight = 64;
 
-	// Singel Layer Size (LevelSize*LevelSize)
-	uint64 LevelZLayerSize = 0;
+	// Singel Z Slice Size (LevelSize*LevelSize)
+	uint64 ZLevelSize = 0;
 
 	// Size of Grid, Size of Mesh
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
@@ -70,7 +70,9 @@ public:
 	UPROPERTY()
 		TArray<FBlockMaterialIDTable> MaterialIDTable;
 
-
+	// Distance at which the Actor will be rendered
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		int32 TheRenderDistance = 2000;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -109,15 +111,14 @@ public:
 	//Save Block Data
 	UFUNCTION(BlueprintCallable, Category = "Save")
 		void SaveBlockData();
+
+	// Load Block Data
 	UFUNCTION(BlueprintCallable, Category = "Save")
 		void LoadBlockData();
 
+	// Save File Name Location
 	UPROPERTY()
-		FString SaveFileDir = TEXT("D:\\\\SaveFileName");
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-		bool bOptimizing = false;
-
+		FString SaveFileDir = TEXT("D:\\\\SomeFolder\\\\SaveFileName");
 		
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,20 +127,19 @@ public:
 
 
 	// Current Block Layer Component list
-	//UPROPERTY()
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+	//UPROPERTY()  // Will make Level To Save The Mesh Instances into .umap
 		TArray<class UBlockLayer*>  TheLayers;
 
 	// Create Layers from current Terrain Bit Data
 	void CreateLayersFromBitData();
 
 
+	// Is the Position Busy 
 //	UFUNCTION(BlueprintCallable, Category = "Layer")
 		bool IsPositionBusy(const ConstructorPosition & ThePosition)const;
 
 	// Finds if ID is in Terrain Array
-	FORCEINLINE bool Layers_ContainsID(TArray<uint8>& TheGenerateLayers, uint8 & ID)
-	{
+	FORCEINLINE bool Layers_ContainsID(TArray<uint8>& TheGenerateLayers, uint8 & ID)	{
 		if (ID == 0)return true;
 		for (int32 i = 0; i < TheGenerateLayers.Num();i++)
 		{
@@ -149,12 +149,11 @@ public:
 			if (TheGenerateLayers[i] > ID)
 				return false;
 		}
-
 		return false;
 	}
+
 	// Add ID to sorted Terrain Array
-	FORCEINLINE void Layers_ADD_ID(TArray<uint8>& TheGenerateLayers, uint8& ID)
-	{
+	FORCEINLINE void Layers_ADD_ID(TArray<uint8>& TheGenerateLayers, uint8& ID)	{
 		if (ID == 0)return;
 		for (int32 i = 0; i < TheGenerateLayers.Num(); i++)
 		{
@@ -162,8 +161,7 @@ public:
 			{
 				TheGenerateLayers.Insert(ID, i);
 				return;
-			}
-			
+			}	
 		}
 		TheGenerateLayers.Add(ID);
 	}
@@ -174,19 +172,26 @@ public:
 	//						Core Events
 
 
-
+	// Add Block At location
 	UFUNCTION(BlueprintCallable, Category = "Save")
 		void AddBlockAtLocation(FVector Location, uint8 LayerID);
+
+	// Destroy Block At location
 	UFUNCTION(BlueprintCallable, Category = "Save")
 		void DestroyBlockAtLocaiton(FVector Location);
 
+	// Optimize Data during runtime
 	UFUNCTION(BlueprintCallable, Category = "Optimization")
 		void OptimiseLevelData(ETypeOfOptimization TheType,int32 CyclesPerLayer);
 
+	// Optimize Data in the Editor
+	void OptimiseBitData(ETypeOfOptimization OptimizationType=ETypeOfOptimization::Horizontal);
 
 
-	// Optimize Horizontally.   Flat Terrain
-	void OptimiseBitData(ETypeOfOptimization OptimizationType=ETypeOfOptimization::Horizontal );
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Break Terrain")
+		int32 BreakNumber = 2;
+	//Break Terrain Event
+	void BreakTerrainData();
 
 	// Build All Blocks
 	void BuildAllBlocks();
@@ -200,37 +205,33 @@ public:
 	// Generate Bit Data from Current Blocks
 	void GenerateBitDataFromLevel();
 
-
-	void CheckOptimizationThread();
-
-	FTimerHandle ThreadCheckHandle;
-
-	////////////////////////////////
-
-
+	// Create Layer With ID
 	class UBlockLayer* CreateLayerWithID(const uint8& LayerID);
+
+	// Get Layer With ID
 	class UBlockLayer* GetLayerWithID(const uint8& LayerID)const ;
 
-
-
-
+	// Destroy Bit Data 
 	void DestroyBitData();
+
+	// Destroy Generated SimpleBlocks and MegaBlocks
 	void DestroyLevelBlockData();
+
+	// Destroy Everything
 	void DestroyAll();
 
-
+	// Log Data
 	static void PrintLog(FString Message);
 };
 
 
 
-//~~~~~ Multi Threading ~~~
 class FMegaBlockFinder : public FRunnable
 {
-	/** Thread to run the worker FRunnable on */
+	// Thread to run the worker FRunnable on 
 	FRunnableThread* Thread;
 
-	/** Stop this thread? Uses Thread Safe Counter */
+	// Stop this thread? Uses Thread Safe Counter 
 	FThreadSafeCounter StopTaskCounter;
 
 	static  FMegaBlockFinder* Runnable;
@@ -238,28 +239,60 @@ class FMegaBlockFinder : public FRunnable
 	/** Level Block Constructor*/
 	class ALevelBlockConstructor* TheConstructor;
 
+	// Copy of Terrain Data
 	TArray<uint8> TerrainBitData;
 
+	// Optimizing Type
 	ETypeOfOptimization OptimizationType;
 
+	// Level Size
 	uint32 LevelSize;
+
+	// Level Size
 	uint32 LevelHeight;
-	uint64 LevelZLayerSize;
+
+	// Grid Size
 	uint16 GridSize;
 
+	// Flat Layer Size  (X*Y)
+	uint64 LevelZLayerSize;
+
+	// Time when optimization started
 	FDateTime StartTime;
 
 
-	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_XDir(uint8& LayerID, uint32& Z, uint32 X, uint32& Y1, uint32& Y2)const
-	{
+	//Constructor
+	FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType);
+
+	// Initialization
+	virtual bool Init();
+
+	// The Actual Running
+	virtual uint32 Run();
+
+	// Internal Check if Thread Finished
+	FORCEINLINE bool IsGenerationFinished() const{
+		return (StopTaskCounter.GetValue()>0);
+	}
+
+	// Internal Stop of Thread
+	FORCEINLINE virtual void Stop()	{
+		StopTaskCounter.Increment();
+	}
+
+	// Makes sure this thread has stopped properly 
+	void EnsureCompletion();
+
+
+
+	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_XDir(uint8& LayerID, uint32& Z, uint32 X, uint32& Y1, uint32& Y2)const{
 		for (uint32 i = Y1; i <= Y2; ++i)
 			if (TerrainBitData[LevelZLayerSize*Z + X*LevelSize + i] != LayerID)
 				return false;
 		return true;
 	}
 
-	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_YDir(uint8& LayerID, uint32& Z, uint32& X1, uint32& X2, uint32 Y)const
-	{
+	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_YDir(uint8& LayerID, uint32& Z, uint32& X1, uint32& X2, uint32 Y)const{
 		for (uint32 i = X1; i <= X2; ++i)
 			if (TerrainBitData[LevelZLayerSize*Z + i*LevelSize + Y] != LayerID)
 				return false;
@@ -268,9 +301,7 @@ class FMegaBlockFinder : public FRunnable
 
 
 
-	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_XDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const
-	{
-
+	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_XDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const{
 		for (uint32 z = Z1; z <= Z2; z++)
 			for (uint32 y = Y1; y <= Y2; y++)
 				if (TerrainBitData[LevelZLayerSize*z + X2*LevelSize + y] != LayerID)
@@ -278,9 +309,7 @@ class FMegaBlockFinder : public FRunnable
 		return true;
 	}
 
-	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_YDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const
-	{
-
+	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_YDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const	{
 		for (uint32 z = Z1; z <= Z2; z++)
 			for (uint32 x = X1; x <= X2; x++)
 				if (TerrainBitData[LevelZLayerSize*z + x*LevelSize + Y2] != LayerID)
@@ -289,8 +318,7 @@ class FMegaBlockFinder : public FRunnable
 		return true;
 	}
 
-	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_ZDir(uint8& LayerID, uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const
-	{
+	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_ZDir(uint8& LayerID, uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const{
 		for (uint32 x = X1; x <= X2; ++x)
 			for (uint32 y = Y1; y <= Y2; ++y)
 				if (TerrainBitData[LevelZLayerSize*Z2 + x*LevelSize + y] != LayerID)
@@ -298,40 +326,18 @@ class FMegaBlockFinder : public FRunnable
 		return true;
 	}
 
-	//Constructor / Destructor
-	FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType);
-
+	
+	// Destructor
+	virtual ~FMegaBlockFinder();
 public:
 
-
+	// Start The Optimization
 	static FMegaBlockFinder* OptimizeData(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType=ETypeOfOptimization::Horizontal);
-	//static FMegaBlockFinder* Optimize_Volumetic(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor);
 
-
-	virtual ~FMegaBlockFinder();
-
-	virtual bool Init();
-
-	virtual uint32 Run();
-
-
-	FORCEINLINE virtual void Stop()
-	{
-		StopTaskCounter.Increment();
-	}
-
-	FORCEINLINE bool IsFinished() const
-	{
-		return (StopTaskCounter.GetValue()>0);
-	}
-	// End FRunnable interface
-
-	/** Makes sure this thread has stopped properly */
-	void EnsureCompletion();
-
-
+	// Stop The Thread
 	static void ShutDown();
-	static bool IsThreadFinished();
 
+	// Check if Thread Is Finished
+	static bool IsFinished();
 
 };

@@ -70,6 +70,7 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 	DetailBuilder.EditCategory("System", FText::GetEmpty(), ECategoryPriority::Important);
 	DetailBuilder.EditCategory("Bit Data Generation", FText::GetEmpty(), ECategoryPriority::Important);
 	DetailBuilder.EditCategory("Terrain Bit Data Manipulation", FText::GetEmpty(), ECategoryPriority::Important);
+	DetailBuilder.EditCategory("Break Terrain", FText::GetEmpty(), ECategoryPriority::Important);
 	DetailBuilder.EditCategory("Save", FText::GetEmpty(), ECategoryPriority::Important);
 
 
@@ -444,6 +445,48 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 								
 							]
 			];
+
+		
+		
+
+
+		IDetailCategoryBuilder& BreakTerrainCategory = DetailBuilder.EditCategory("Break Terrain", FText::GetEmpty(), ECategoryPriority::Important);
+
+
+
+
+
+
+		BreakTerrainCategory.AddCustomRow(FText::GetEmpty())
+			[
+				SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+							.Padding(1.0f, 1.0f, 1.0f, 1.0f)
+							.HAlign(HAlign_Fill)
+							.VAlign(VAlign_Fill)
+							[
+								SNew(SBox)
+								.HeightOverride(45)
+								[
+
+									SNew(SHorizontalBox)
+										+ SHorizontalBox::Slot()
+											.Padding(1.0f, 1.0f, 1.0f, 1.0f)
+											.HAlign(HAlign_Fill)
+											.VAlign(VAlign_Fill)
+											[
+												SNew(SButton)
+												.Text(LOCTEXT("Break Terrain Data", "  Break Terrain Data "))
+												.TextStyle(&BigBlackTextStyle)
+												.OnClicked(this, &FLevelBlockConstructorDetails::BreakTerrain)
+											]
+								]
+							]
+			];
+
+
+
+
 		//SaveCategory.AddProperty("bAutoLoadData", NewInts->GetClass(), TEXT(" Auto Load Data on End Play ?"), EPropertyLocation::Common);
 		//SaveCategory.AddProperty("bAutoSaveData", NewInts->GetClass(), TEXT(" Auto Save Data on Begin Play ?"), EPropertyLocation::Common);
 		
@@ -558,6 +601,12 @@ FReply FLevelBlockConstructorDetails::LoadData()
 	return FReply::Handled();
 }
 
+
+FReply FLevelBlockConstructorDetails::BreakTerrain()
+{
+	if (TheInstance)TheInstance->BreakTerrainData();
+	return FReply::Handled();
+}
 
 FReply FLevelBlockConstructorDetails::DestroyEverything()
 {

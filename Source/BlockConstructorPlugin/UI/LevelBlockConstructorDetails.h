@@ -47,6 +47,10 @@ public:
 	FReply LoadData();
 
 
+
+	FReply BreakTerrain();
+
+
 	static TSharedRef<IDetailCustomization> MakeInstance();
 
 	// Call Function By ref or name

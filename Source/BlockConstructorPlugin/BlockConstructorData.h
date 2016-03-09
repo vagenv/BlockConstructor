@@ -46,10 +46,8 @@ public:
 	*/
 };
 
-FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition)
-{
+FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition){
 	Ar << ThePosition.X<< ThePosition.Y<< ThePosition.Z;
-
 	return Ar;
 }
 
@@ -63,8 +61,7 @@ public:
 	
 };
 
-FORCEINLINE FArchive& operator<<(FArchive &Ar, SimpleBlockData& TheBlock)
-{
+FORCEINLINE FArchive& operator<<(FArchive &Ar, SimpleBlockData& TheBlock){
 	Ar << TheBlock.Position<< TheBlock.ArrayPosition;
 	return Ar;
 }
@@ -95,12 +92,10 @@ public:
 		return (X1 == X2 && Y1 == Y2 &&	Z1 == Z2);
 	}
 };
-FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock)
-{
+FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock){
 	Ar 	<< TheBlock.Z1 << TheBlock.Z2
 		<< TheBlock.X1 << TheBlock.X2
 		<< TheBlock.Y1 << TheBlock.Y2;
-
 	return Ar;
 }
 
@@ -108,13 +103,12 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock)
 class MegaBlockMetaData:public MegaBlockCoreData
 {
 public:
-	uint32 BlockNumber;
+	uint32 BlockNumber=0;
 
 	MegaBlockMetaData() {}
 
 	MegaBlockMetaData(const uint32 & newBlockNumber,const uint16 & newZ1, const uint16& newZ2, const uint16& newX1, const uint16&  newX2, const uint16 &  newY1, const uint16& newY2)
 		:MegaBlockCoreData(newZ1,newZ2,newX1,newX2,newY1,newY2), BlockNumber(newBlockNumber){}
-
 };
 
 
@@ -159,8 +153,6 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockData& TheBlock)
 struct BlockLayerSaveData 
 {
 public:
-
-
 	uint8 LayerMaterialID;
 
 	TArray<ConstructorPosition>  SimpleBlocks_Core;
@@ -187,10 +179,8 @@ public:
 		}
 	}
 };
-FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockLayerSaveData& TheLayerSaveData)
-{
+FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockLayerSaveData& TheLayerSaveData){
 	Ar << TheLayerSaveData.LayerMaterialID << TheLayerSaveData.SimpleBlocks_Core << TheLayerSaveData.MegaBlocks_Core;
-
 	return Ar;
 }
 
@@ -204,77 +194,27 @@ public:
 	uint16 LevelSize = 0;
 	uint16 LevelHeight = 0;
 	uint16 GridSize = 0;
+
 	BlockConstructorSaveData() {}
+
 	BlockConstructorSaveData( const uint16&newLevelSize, const uint16& newLevelHeight, const uint16& newGridSize) :
 		LevelSize(newLevelSize),
 		GridSize(newGridSize),
-		LevelHeight(newLevelHeight)
-	{
-	}
+		LevelHeight(newLevelHeight){}
 
 	BlockConstructorSaveData(const TArray<BlockLayerSaveData> newTheLayers,const int32&newLevelSize, const int32& newLevelHeight, const float& newGridSize ):
 		 TheLayers(newTheLayers),
 		 LevelSize(newLevelSize),
 		LevelHeight(newLevelHeight),
-		GridSize(newGridSize)
-	{
-	}
+		GridSize(newGridSize){}
 };
 
 
-FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockConstructorSaveData& SaveData)
-{
+FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockConstructorSaveData& SaveData){
 	Ar << SaveData.TheLayers<<SaveData.LevelSize<<SaveData.LevelHeight<<SaveData.GridSize;
-
 	return Ar;
 }
-/*
-*/
 
-/*
-FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockSaveData* SaveGameData)
-{
-	if (!SaveGameData) return Ar;
-	//~
-
-	//	Ar << SaveGameData->TerrainBitData;  //int32
-	//	Ar << SaveGameData->SimpleBlocks;  //FVector
-	//Ar << SaveGameData->TerrainBitData; //TArray<FRotator>
-
-	return Ar;
-}
-*/
-
-/*
-USTRUCT()
-struct FInstancedBlockData
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-
-	// Is Busy
-	UPROPERTY()
-		bool bBusy = false;
-
-	// Layer Reference
-	UPROPERTY()
-	class UBlockLayer* TheLayer;
-
-	// Location in the world
-	UPROPERTY()
-		int32 InstancedBlockID;
-
-	// Location in the constructor
-	UPROPERTY()
-		FVector ConstructorPosition;
-
-	FInstancedBlockData() {};
-
-	FInstancedBlockData(FVector newConstructorPosition):ConstructorPosition(newConstructorPosition)
-	{	}
-};
-*/
 
 //BlueprintType
 USTRUCT()
@@ -297,11 +237,9 @@ UCLASS()
 class UBlockConstructorData: public UObject
 {
 	GENERATED_BODY()
-
 public:
 
 	// Access Object from Class
 	UFUNCTION(BlueprintPure, meta = (HidePin = "WorldContextObject", DefaultToSelf = "WorldContextObject", DisplayName = "Acces Object From Blueprint", CompactNodeTitle = "Access", Keywords = "access create blueprint"), Category = "Rade")
 	static UObject* ObjectFromBlueprint(UObject* WorldContextObject, UClass* UC);
-
 };
