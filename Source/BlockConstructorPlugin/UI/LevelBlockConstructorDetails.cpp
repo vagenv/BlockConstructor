@@ -62,9 +62,16 @@ void FLevelBlockConstructorDetails::CustomizeDetails(IDetailLayoutBuilder& Detai
 			Classes.Add(Instance->GetClass());
 		}
 	}
+	TheInstances.Empty();
 
 
-
+	for (FSelectionIterator It(GEditor->GetSelectedActorIterator()); It;++It)
+	{
+		if (ALevelBlockConstructor* TheConst= Cast<ALevelBlockConstructor>(*It)) 
+		{
+			TheInstances.Add(TheConst);
+		}
+	}
 	if (!TheInstance)return;
 
 	DetailBuilder.EditCategory("System", FText::GetEmpty(), ECategoryPriority::Important);
@@ -552,31 +559,33 @@ void FLevelBlockConstructorDetails::SaveTextChanged(const FText& NewText, ETextC
 
 FReply  FLevelBlockConstructorDetails::GenerateBitDataFromTexture()
 {
-	if (TheInstance)TheInstance->GenerateBitDataFromTexture();
-	return FReply::Handled();
-}
-FReply  FLevelBlockConstructorDetails::GenerateBitDataFromLevel()
-{
-	if (TheInstance)TheInstance->GenerateBitDataFromLevel();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->GenerateBitDataFromTexture();
 	return FReply::Handled();
 }
 
 
 FReply  FLevelBlockConstructorDetails::OptimiseBitData_Horizontal()
 {
-	if (TheInstance)TheInstance->OptimiseBitData(ETypeOfOptimization::Horizontal);
+
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if(Ints)Ints->OptimiseBitData(ETypeOfOptimization::Horizontal);
+
+	//if (TheInstance)TheInstance->OptimiseBitData(ETypeOfOptimization::Horizontal);
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::OptimiseBitData_Volumetical()
 {
-	if (TheInstance)TheInstance->OptimiseBitData(ETypeOfOptimization::Volumetic);
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->OptimiseBitData(ETypeOfOptimization::Volumetic);
 	return FReply::Handled();
 }
 
 FReply  FLevelBlockConstructorDetails::BuildBlockArrayData()
 {
-	if (TheInstance)TheInstance->BuildAllBlocks();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->BuildAllBlocks();
 	return FReply::Handled();
 }
 FReply FLevelBlockConstructorDetails::BuildPureBitTerrain()
@@ -587,42 +596,48 @@ FReply FLevelBlockConstructorDetails::BuildPureBitTerrain()
 
 FReply FLevelBlockConstructorDetails::SaveData()
 {
-	if (TheInstance)TheInstance->SaveBlockData();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->SaveBlockData();
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::LoadData()
 {
-	if (TheInstance)
-	{
-		TheInstance->LoadBlockData();
-		TheInstance->GenerateBitDataFromLevel();
-	}
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)
+		{
+			Ints->LoadBlockData();
+			Ints->GenerateBitDataFromLevel();
+		}
 	return FReply::Handled();
 }
 
 
 FReply FLevelBlockConstructorDetails::BreakTerrain()
 {
-	if (TheInstance)TheInstance->BreakTerrainData();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->BreakTerrainData();
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::DestroyEverything()
 {
-	if (TheInstance)TheInstance->DestroyAll();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->DestroyAll();
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::DestroyBitData()
 {
-	if (TheInstance)TheInstance->DestroyBitData();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->DestroyBitData();
 	return FReply::Handled();
 }
 
 FReply FLevelBlockConstructorDetails::DestroyLevelBlockData()
 {
-	if (TheInstance)TheInstance->DestroyLevelBlockData();
+	for (ALevelBlockConstructor* Ints : TheInstances)
+		if (Ints)Ints->DestroyLevelBlockData();
 	return FReply::Handled();
 }
 

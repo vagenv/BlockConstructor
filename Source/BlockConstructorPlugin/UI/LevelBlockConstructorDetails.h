@@ -11,6 +11,9 @@ class FLevelBlockConstructorDetails : public IDetailCustomization
 {
 public:
 
+	TArray<class ALevelBlockConstructor*> TheInstances;
+
+
 	FLevelBlockConstructorDetails();
 
 	FTextBlockStyle BigBlackTextStyle;
@@ -28,8 +31,6 @@ public:
 
 	// Generate Bit Data From Texture
 	FReply GenerateBitDataFromTexture();
-	FReply GenerateBitDataFromLevel();
-
 
 	FReply OptimiseBitData_Horizontal();
 	FReply OptimiseBitData_Volumetical();

@@ -71,6 +71,11 @@ void UBlockLayer::BuildAllBlocks()
 	UpdateStateStatus();
 }
 
+void UBlockLayer::DestroyAllInstances()
+{
+	ClearInstances();
+}
+
 void UBlockLayer::UpdateStateStatus()
 {
 	SimpleBlockNumer = TheSimpleBlocks.Num();

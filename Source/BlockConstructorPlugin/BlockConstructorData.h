@@ -239,7 +239,12 @@ class UBlockConstructorData: public UObject
 	GENERATED_BODY()
 public:
 
+
+
+	UFUNCTION(BlueprintPure, meta = (HidePin = "WorldContextObject", DefaultToSelf = "WorldContextObject", DisplayName = "Get Closest Block Constructor", CompactNodeTitle = "Get BlockLevel", Keywords = "GetClosest"), Category = "LevelBlockConstructor")
+		static class ALevelBlockConstructor* GetClosestBlockConstructor(UObject* WorldContextObject, const FVector& ThePositon);
+
 	// Access Object from Class
-	UFUNCTION(BlueprintPure, meta = (HidePin = "WorldContextObject", DefaultToSelf = "WorldContextObject", DisplayName = "Acces Object From Blueprint", CompactNodeTitle = "Access", Keywords = "access create blueprint"), Category = "Rade")
+	UFUNCTION(BlueprintPure, meta = (HidePin = "WorldContextObject", DefaultToSelf = "WorldContextObject", DisplayName = "Acces Object From Blueprint", CompactNodeTitle = "Access", Keywords = "access"), Category = "LevelBlockConstructor")
 	static UObject* ObjectFromBlueprint(UObject* WorldContextObject, UClass* UC);
 };

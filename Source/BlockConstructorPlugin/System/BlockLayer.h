@@ -47,6 +47,7 @@ public:
 
 	// Build All Block Data
 	void BuildAllBlocks();
+	void DestroyAllInstances();
 
 	// Number of Simple Blocks in the Layer
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")

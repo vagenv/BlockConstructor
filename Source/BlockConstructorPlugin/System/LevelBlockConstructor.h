@@ -7,8 +7,6 @@
 #include "LevelBlockConstructor.generated.h"
 
 
-static uint32 RenderDistance = 3000;
-
 
 // Block Constructor. Actor that holds, Constructs and Deconstructs Blocks
 UCLASS()
@@ -16,8 +14,6 @@ class ALevelBlockConstructor : public AActor
 {
 	GENERATED_BODY()
 public:
-
-
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -39,6 +35,10 @@ public:
 
 	//						Core Properties
 
+
+	class APlayerController* TheLocalPlayerController;
+
+	class FMegaBlockFinder* TheOpimizingThread;
 
 	// Data of Terrain  , MUST NOT BE UPROPERTY (or will be saved into  .map  )
 		TArray<uint8> TerrainBitData;
@@ -73,6 +73,7 @@ public:
 	// Distance at which the Actor will be rendered
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 		int32 TheRenderDistance = 2000;
+	bool bLevelLoaded = false;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -189,9 +190,18 @@ public:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Break Terrain")
-		int32 BreakNumber = 2;
+		int32 BreakNumber = 8;
 	//Break Terrain Event
 	void BreakTerrainData();
+
+
+
+	void CheckDistance();
+	void LoadLevel();
+	void UnLoadLevel();
+
+	FTimerHandle DistanceCheckingHandle;
+
 
 	// Build All Blocks
 	void BuildAllBlocks();
@@ -234,7 +244,7 @@ class FMegaBlockFinder : public FRunnable
 	// Stop this thread? Uses Thread Safe Counter 
 	FThreadSafeCounter StopTaskCounter;
 
-	static  FMegaBlockFinder* Runnable;
+//	static  FMegaBlockFinder* Runnable;
 
 	/** Level Block Constructor*/
 	class ALevelBlockConstructor* TheConstructor;
@@ -261,8 +271,6 @@ class FMegaBlockFinder : public FRunnable
 	FDateTime StartTime;
 
 
-	//Constructor
-	FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType);
 
 	// Initialization
 	virtual bool Init();
@@ -327,17 +335,98 @@ class FMegaBlockFinder : public FRunnable
 	}
 
 	
+	
+public:
+	//Constructor
+	FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType);
 	// Destructor
 	virtual ~FMegaBlockFinder();
-public:
-
 	// Start The Optimization
-	static FMegaBlockFinder* OptimizeData(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType=ETypeOfOptimization::Horizontal);
+	//FMegaBlockFinder* OptimizeData(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType=ETypeOfOptimization::Horizontal);
 
 	// Stop The Thread
-	static void ShutDown();
+	void ShutDown();
 
 	// Check if Thread Is Finished
-	static bool IsFinished();
+	bool IsFinished();
 
 };
+
+/*
+class FTestThread : public FRunnable
+{
+	// Thread to run the worker FRunnable on 
+	FRunnableThread* Thread;
+
+	// Stop this thread? Uses Thread Safe Counter 
+	FThreadSafeCounter StopTaskCounter;
+
+	// Level Block Constructor
+	ALevelBlockConstructor* TheConstructor;
+
+
+	// Initialization
+	virtual bool Init() 
+	{
+		return true;
+	}
+
+
+	// The Actual Running
+	virtual uint32 Run() 
+	{
+		while (!IsGenerationFinished())
+		{
+			TheConstructor->PrintLog(TheConstructor->GetActorLabel()+"  Test Thread");
+			FPlatformProcess::Sleep(1);
+		
+		}
+
+		return 0;
+	};
+
+	// Internal Check if Thread Finished
+	FORCEINLINE bool IsGenerationFinished() const {
+		return (StopTaskCounter.GetValue()>0);
+	}
+
+	// Internal Stop of Thread
+	FORCEINLINE virtual void Stop() {
+		StopTaskCounter.Increment();
+	}
+
+	// Makes sure this thread has stopped properly 
+	void EnsureCompletion() 
+	{
+		Stop();
+		Thread->WaitForCompletion();
+	};
+
+
+	// Destructor
+	virtual ~FTestThread() {};
+public:
+
+	//Constructor
+	FTestThread(ALevelBlockConstructor* inConstructor)
+		:TheConstructor(inConstructor)
+	{
+		Thread = FRunnableThread::Create(this, TEXT("My test Thread"), 0, TPri_AboveNormal);
+	};
+
+
+	// Stop The Thread
+	void ShutDown() 
+	{
+		EnsureCompletion();
+		delete this;
+	};
+
+	// Check if Thread Is Finished
+	bool IsFinished() 
+	{
+		 return IsGenerationFinished();
+	};
+
+};
+*/
