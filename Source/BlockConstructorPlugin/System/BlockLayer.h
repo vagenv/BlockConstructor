@@ -43,10 +43,14 @@ public:
 	TArray<SimpleBlockData> TheSimpleBlocks;
 
 	// Current Mega Blocks
+
 	TArray<MegaBlockData> TheMegaBlocks;
 
 	// Build All Block Data
 	void BuildAllBlocks();
+
+	void InitNewBlocks(TArray<MegaBlockData>& inMegaBlocks,TArray<SimpleBlockData>& inSimpleBlocks);
+
 	void DestroyAllInstances();
 
 	// Number of Simple Blocks in the Layer

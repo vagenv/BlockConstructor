@@ -5,7 +5,6 @@
 #include "PropertyEditorModule.h"
 #include "LevelEditor.h"
 #include "UI/LevelBlockConstructorDetails.h"
-#include "UI/LevelBlockDataPropertyDetails.h"
 
 #define LOCTEXT_NAMESPACE "BlockConstructorPlugin"
 
@@ -43,16 +42,6 @@ void FBlockConstructorPlugin::StartupModule()
 	UE_LOG(LogStats, Warning, TEXT(" "));
 	UE_LOG(LogStats, Warning, TEXT(" Module Started"));
 	UE_LOG(LogStats, Warning, TEXT(" "));
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//						Register Custom Property
-	/*
-	FPropertyEditorModule& BlockDataPropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-
-	//Custom properties
-	BlockDataPropertyModule.RegisterCustomPropertyTypeLayout("BlockData", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FLevelBlockDataPropertyDetails::MakeInstance));
-
-	*/
 }
 
 
@@ -63,6 +52,10 @@ void FBlockConstructorPlugin::ShutdownModule()
 }
 
 
+void PrintLog(FString Message) {
+	printr(Message);
+	UE_LOG(BlockPlugin, Warning, TEXT(" %s"), *Message);
+}
 
 
 

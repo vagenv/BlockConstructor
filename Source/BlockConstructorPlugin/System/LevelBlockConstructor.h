@@ -27,7 +27,7 @@ public:
 
 	virtual void PostEditChangeProperty(FPropertyChangedEvent & PropertyChangedEvent)override;
 
-	
+	bool bTicking = false;
 	//UFUNCTION(BlueprintImplementableEvent, Category = " ")
 	//UFUNCTION(BlueprintCallable, BlueprintPure, Category = "")
 
@@ -75,6 +75,17 @@ public:
 		int32 TheRenderDistance = 2000;
 	bool bLevelLoaded = false;
 
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		GridPosition GlobalGridPosition;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "BlockConstructor")
+		void BP_LevelLoaded();
+	UFUNCTION(BlueprintImplementableEvent, Category = "BlockConstructor")
+		void BP_LevelUnloaded();
+
+	UFUNCTION(BlueprintCallable, Category = "BlockConstructor")
+		FVector GetTopLocationAtPosition(int32 X, int32 Y);
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						Generate Terrain From texture
@@ -109,19 +120,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
 		bool bAutoLoadData;
 
+
+	bool bAutoBuildAfterOptimization = false;
+
 	//Save Block Data
 	UFUNCTION(BlueprintCallable, Category = "Save")
-		void SaveBlockData();
+		bool SaveBlockData();
 
 	// Load Block Data
 	UFUNCTION(BlueprintCallable, Category = "Save")
-		void LoadBlockData();
+		bool LoadBlockData();
 
 	// Save File Name Location
 	UPROPERTY()
 		FString SaveFileDir = TEXT("D:\\\\SomeFolder\\\\SaveFileName");
-		
-
+	
+	// Called From Thread
+	void RealtimeOpimizationThreadChecking();
+	FTimerHandle RealtimeOptimizationThreadTimerHandle;
+	bool bRealtimeOpimization = false;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						The Layers
@@ -183,10 +200,10 @@ public:
 
 	// Optimize Data during runtime
 	UFUNCTION(BlueprintCallable, Category = "Optimization")
-		void OptimiseLevelData(ETypeOfOptimization TheType,int32 CyclesPerLayer);
+		void OptimiseLevelData(ETypeOfOptimization TheType);
 
 	// Optimize Data in the Editor
-	void OptimiseBitData(ETypeOfOptimization OptimizationType=ETypeOfOptimization::Horizontal);
+	void OptimiseBitData(ETypeOfOptimization OptimizationType = ETypeOfOptimization::Horizontal, bool bAutoBuildLevelAfterCompleteion = false);
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Break Terrain")
@@ -230,8 +247,6 @@ public:
 	// Destroy Everything
 	void DestroyAll();
 
-	// Log Data
-	static void PrintLog(FString Message);
 };
 
 
@@ -351,82 +366,3 @@ public:
 	bool IsFinished();
 
 };
-
-/*
-class FTestThread : public FRunnable
-{
-	// Thread to run the worker FRunnable on 
-	FRunnableThread* Thread;
-
-	// Stop this thread? Uses Thread Safe Counter 
-	FThreadSafeCounter StopTaskCounter;
-
-	// Level Block Constructor
-	ALevelBlockConstructor* TheConstructor;
-
-
-	// Initialization
-	virtual bool Init() 
-	{
-		return true;
-	}
-
-
-	// The Actual Running
-	virtual uint32 Run() 
-	{
-		while (!IsGenerationFinished())
-		{
-			TheConstructor->PrintLog(TheConstructor->GetActorLabel()+"  Test Thread");
-			FPlatformProcess::Sleep(1);
-		
-		}
-
-		return 0;
-	};
-
-	// Internal Check if Thread Finished
-	FORCEINLINE bool IsGenerationFinished() const {
-		return (StopTaskCounter.GetValue()>0);
-	}
-
-	// Internal Stop of Thread
-	FORCEINLINE virtual void Stop() {
-		StopTaskCounter.Increment();
-	}
-
-	// Makes sure this thread has stopped properly 
-	void EnsureCompletion() 
-	{
-		Stop();
-		Thread->WaitForCompletion();
-	};
-
-
-	// Destructor
-	virtual ~FTestThread() {};
-public:
-
-	//Constructor
-	FTestThread(ALevelBlockConstructor* inConstructor)
-		:TheConstructor(inConstructor)
-	{
-		Thread = FRunnableThread::Create(this, TEXT("My test Thread"), 0, TPri_AboveNormal);
-	};
-
-
-	// Stop The Thread
-	void ShutDown() 
-	{
-		EnsureCompletion();
-		delete this;
-	};
-
-	// Check if Thread Is Finished
-	bool IsFinished() 
-	{
-		 return IsGenerationFinished();
-	};
-
-};
-*/

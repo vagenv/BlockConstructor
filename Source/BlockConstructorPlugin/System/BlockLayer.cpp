@@ -33,6 +33,8 @@ void UBlockLayer::PrintLog(FString Message)
 
 void UBlockLayer::BuildAllBlocks()
 {
+	ClearInstances();
+
 	uint64 MegaBlockNum = 0;
 	uint64 BlockNum = 0;
 	FTransform SpawnPosition;
@@ -69,6 +71,15 @@ void UBlockLayer::BuildAllBlocks()
 	}
 
 	UpdateStateStatus();
+}
+
+void UBlockLayer::InitNewBlocks(TArray<MegaBlockData>& inMegaBlocks, TArray<SimpleBlockData>& inSimpleBlocks)
+{
+	TheMegaBlocks.Empty();
+	TheSimpleBlocks.Empty();
+
+	TheMegaBlocks = inMegaBlocks;
+	TheSimpleBlocks = inSimpleBlocks;
 }
 
 void UBlockLayer::DestroyAllInstances()
@@ -235,10 +246,6 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 			&& TheMegaBlocks[i].Y1 <= ThePosition.Y && TheMegaBlocks[i].Y2 >= ThePosition.Y
 			&& TheMegaBlocks[i].Z1 <= ThePosition.Z && TheMegaBlocks[i].Z2 >= ThePosition.Z)
 		{
-
-		//	PrintLog("Type:  Mega       " + ThePosition.ToString());
-			//PrintLog("Found");
-			//MegaBlockData UpperPart, LowerPart, Part1,Part2,Part3,Part4;
 			TArray<MegaBlockData> BreakBlocks;
 
 			// Upper Part Exists
@@ -278,14 +285,12 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 				Part1.Y2 = ThePosition.Y;
 				Part1.Z1 = ThePosition.Z;
 				Part1.Z2 = ThePosition.Z;
-
 				
 				if (Part1.IsValid()) 
 				{
 					Part1.CalculateLocation(GridSize);
 					BreakBlocks.Add(Part1);
 				}
-					
 			}
 
 			//Part 2
@@ -302,8 +307,7 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 				{
 					Part2.CalculateLocation(GridSize);
 					BreakBlocks.Add(Part2);
-				}
-					
+				}				
 			}
 
 			//Part 3
@@ -321,11 +325,10 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 					Part3.CalculateLocation(GridSize);
 					BreakBlocks.Add(Part3);
 				}
-					
 			}
 
 			//Part 4
-			if (ThePosition.X<TheMegaBlocks[i].Y2)
+			if (ThePosition.Y<TheMegaBlocks[i].Y2)
 			{
 				//exist
 				MegaBlockData Part4(TheMegaBlocks[i]);
@@ -339,26 +342,16 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 					Part4.CalculateLocation(GridSize);
 					BreakBlocks.Add(Part4);
 				}
-					
 			}
 
-
-			//PrintLog("Break Blocks Num :  "+FString::FromInt(BreakBlocks.Num()));
 
 			if (BreakBlocks.Num()>0) 
 			{	
 				
 				if (BreakBlocks[0].IsSingleBlock()) 
-				{
-					//TheSimpleBlocks.Add(SimpleBlockData(ThePosition, InstanceBodies.Num()));
-
-		
+				{		
 					SimpleBlockData NewBlock(ConstructorPosition( BreakBlocks[0].X1, BreakBlocks[0].Y1, BreakBlocks[0].Z1), TheMegaBlocks[i].ArrayPosition);
-				//	FTransform newTransform;	
 
-
-					//newTransform.SetLocation(FVector(((float)NewBlock.Position.X)*GridSize, ((float)NewBlock.Position.Y)*GridSize, ((float)NewBlock.Position.Z)*GridSize) + CenteredOffset);
-					//newTransform.SetScale3D(FVector(1));
 					UpdateInstanceTransform(TheMegaBlocks[i].ArrayPosition, 
 												FTransform(	GetComponentRotation().Quaternion(),
 													FVector(((float)NewBlock.Position.X)*GridSize, ((float)NewBlock.Position.Y)*GridSize, ((float)NewBlock.Position.Z)*GridSize) + CenteredOffset,
@@ -368,8 +361,7 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 
 					TheSimpleBlocks.Add(NewBlock);
 					TheMegaBlocks.RemoveAt(i);
-				//	PrintLog("Add new Block");
-
+					PrintLog("Transform Into Single Block");
 				}
 				else 
 				{
@@ -382,21 +374,15 @@ bool UBlockLayer::DestroyBlockAtPosition(const ConstructorPosition & ThePosition
 						1 + TheMegaBlocks[i].Y2 - TheMegaBlocks[i].Y1,
 						1 + TheMegaBlocks[i].Z2 - TheMegaBlocks[i].Z1));
 					UpdateInstanceTransform(TheMegaBlocks[i].ArrayPosition, newTransform);
-
 				}
-
-
 				for (int32 j = 1; j < BreakBlocks.Num();++j)
 				{
 					if (BreakBlocks.IsValidIndex(j)) 
 					{
 						AddMegaBlockInstance(BreakBlocks[j]);
 					}
-				}
-				
+				}		
 			}
-			else PrintLog("Error With Breaking");
-
 			goto success;
 		}
 

@@ -14,6 +14,23 @@ enum class ETypeOfOptimization : uint8
 	Volumetic UMETA(DisplayName = "Volumetic (Slow, Efficient)"),
 };
 
+struct GridPosition
+{
+
+	int32 X;
+	int32 Y;
+	GridPosition() {}
+	GridPosition(const int16& newX, const int16& newY) :X(newX), Y(newY){}
+	FString ToString()const	{
+		return FString::Printf(TEXT("%X=i Y=%i"), X,Y);
+	}
+
+
+	friend inline bool operator==(const GridPosition& lhs, const GridPosition& rhs)	{
+		return ((lhs.X == rhs.X) && (lhs.Y == rhs.Y));
+	}
+
+};
 
 struct ConstructorPosition 
 {
@@ -26,24 +43,13 @@ public:
 
 	ConstructorPosition(const uint16& newX, const uint16& newY, const uint16& newZ) :X(newX), Y(newY), Z(newZ){}
 
-	friend inline bool operator==(const ConstructorPosition& lhs, const ConstructorPosition& rhs) 
-	{                           
+	friend inline bool operator==(const ConstructorPosition& lhs, const ConstructorPosition& rhs) 	{                           
 		return ((lhs.X == rhs.X) && (lhs.Y == rhs.Y) && (lhs.Z == rhs.Z));
 	}
-	FString ToString()const 
-	{
-		FString PrintText = TEXT("x=") + FString::FromInt(X) + TEXT("  y=") + FString::FromInt(Y) + TEXT("   z=") + FString::FromInt(Z);
-		return PrintText;
-	}
-	/*
-	inline const TCHAR* ToString()const 
-	{
-	//	TEXT("MyCharacter's Health is %d"), MyCharacter->Health
-		//return (*(TEXT("x="),X)+ FString("y=%i", Y)+ FString("z=%i", Z)));
-		return *(TEXT("x=") + FString::FromInt((int32)X) + TEXT("y=") + FString::FromInt((int32)Y) + TEXT("  z=") + FString::FromInt((int32)Z));
+	FString ToString()const {
+		return FString::Printf(TEXT("X = %u  Y = %u  Z =%u "), X, Y,Z);
 	}
 	
-	*/
 };
 
 FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition){
@@ -57,7 +63,7 @@ public:
 	ConstructorPosition Position;
 	uint32 ArrayPosition;
 	SimpleBlockData() {}
-	SimpleBlockData(const ConstructorPosition& newPosition, const uint32 & newArrayPosition):Position(newPosition),ArrayPosition(newArrayPosition)	{}
+	SimpleBlockData(const ConstructorPosition& newPosition, const uint32 & newArrayPosition=0):Position(newPosition),ArrayPosition(newArrayPosition)	{}
 	
 };
 
@@ -215,7 +221,6 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockConstructorSaveData& SaveDat
 	return Ar;
 }
 
-
 //BlueprintType
 USTRUCT()
 struct FBlockMaterialIDTable : public FTableRowBase
@@ -231,15 +236,12 @@ struct FBlockMaterialIDTable : public FTableRowBase
 
 
 
-
 // Container of Custom Types
 UCLASS()
 class UBlockConstructorData: public UObject
 {
 	GENERATED_BODY()
 public:
-
-
 
 	UFUNCTION(BlueprintPure, meta = (HidePin = "WorldContextObject", DefaultToSelf = "WorldContextObject", DisplayName = "Get Closest Block Constructor", CompactNodeTitle = "Get BlockLevel", Keywords = "GetClosest"), Category = "LevelBlockConstructor")
 		static class ALevelBlockConstructor* GetClosestBlockConstructor(UObject* WorldContextObject, const FVector& ThePositon);
