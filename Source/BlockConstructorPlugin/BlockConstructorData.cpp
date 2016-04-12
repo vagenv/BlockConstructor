@@ -8,6 +8,7 @@
 //						Create and Acces object from Class 
 
 
+// Get Closest Block Constructor in the Level
 ALevelBlockConstructor* UBlockConstructorData::GetClosestBlockConstructor(UObject* WorldContextObject, const FVector& ThePositon)
 {
 	if (!WorldContextObject)return nullptr;

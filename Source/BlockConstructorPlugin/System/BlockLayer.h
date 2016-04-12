@@ -49,13 +49,34 @@ public:
 	// Build All Block Data
 	void BuildAllBlocks();
 
+	// Continuous build of Blocks during gameplay
+	void BuildTimerFunction();
+	
+	// Build Timer Handle
+	FTimerHandle BuildTimerHandle;
+
+	// Build Speed
+	float BlockBuildSpeed=0.1;
+
+	// Build Amount
+	int32 BlockBuildAmount=10;
+
+	// Number of Currently Build Blocks
+	int64 BlocksBuild = 0;
+
+	// Number of Iteration processed
+	int32 CurrentBuildItteration = 0;
+
+	// Initialise New Blocks
 	void InitNewBlocks(TArray<MegaBlockData>& inMegaBlocks,TArray<SimpleBlockData>& inSimpleBlocks);
 
+	// Destroy All Blocks
 	void DestroyAllInstances();
 
 	// Number of Simple Blocks in the Layer
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 		int32 SimpleBlockNumer;
+
 	// Number of Mega Blocks in the Layer
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 		int32 MegaBlockNumber;
@@ -81,7 +102,4 @@ public:
 
 	// Destroy Block At Location
 	bool DestroyBlockAtPosition(const ConstructorPosition& ThePosition);
-
-
-	static void PrintLog(FString Message);
 };

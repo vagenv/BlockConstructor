@@ -23,24 +23,23 @@ public:
 	ALevelBlockConstructor(const FObjectInitializer& ObjectInitializer);
 
 	virtual void BeginPlay()override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 	virtual void BeginDestroy()override;
 
+	// Editor Values are changed
 	virtual void PostEditChangeProperty(FPropertyChangedEvent & PropertyChangedEvent)override;
 
-	bool bTicking = false;
-	//UFUNCTION(BlueprintImplementableEvent, Category = " ")
-	//UFUNCTION(BlueprintCallable, BlueprintPure, Category = "")
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						Core Properties
 
 
+	// Local Player Controller
 	class APlayerController* TheLocalPlayerController;
 
-	class FMegaBlockFinder* TheOpimizingThread;
 
-	// Data of Terrain  , MUST NOT BE UPROPERTY (or will be saved into  .map  )
+	// Data of Terrain  , MUST NOT BE UPROPERTY (or it will be saved into  .map  )
 		TArray<uint8> TerrainBitData;
 
 	// X, Y   - Maximum Size of Terrain.
@@ -66,25 +65,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 		UDataTable* BlockDataTable;
 
-	// Stored Data of Avaiable Materials 
+	// Stored Data of Available Materials 
 	UPROPERTY()
 		TArray<FBlockMaterialIDTable> MaterialIDTable;
 
-	// Distance at which the Actor will be rendered
+
+	// Distance at which the Blocks will be rendered/built [ Farthest point of terrain + TheRenderDistance ]
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 		int32 TheRenderDistance = 2000;
-	bool bLevelLoaded = false;
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
-		GridPosition GlobalGridPosition;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "BlockConstructor")
-		void BP_LevelLoaded();
-	UFUNCTION(BlueprintImplementableEvent, Category = "BlockConstructor")
-		void BP_LevelUnloaded();
+	// Global Grid Position
+	GridPosition GlobalGridPosition;
 
-	UFUNCTION(BlueprintCallable, Category = "BlockConstructor")
-		FVector GetTopLocationAtPosition(int32 X, int32 Y);
+
+
+
+	// Continuous build Speed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		float BlockBuildSpeed=0.1;
+
+	// Continuous build Amount
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
+		int32 BlockBuildAmount=100;
+
+
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,6 +113,89 @@ public:
 
 
 
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//						Core Events
+
+
+	// Add Block At location
+	UFUNCTION(BlueprintCallable, Category = "Save")
+		void AddBlockAtLocation(FVector Location, int32 LayerID);
+
+	// Destroy Block At location
+	UFUNCTION(BlueprintCallable, Category = "Save")
+		void DestroyBlockAtLocaiton(FVector Location);
+
+
+	// Get Top Position at specific location
+	UFUNCTION(BlueprintCallable, Category = "BlockConstructor")
+		FVector GetTopLocationAtPosition(int32 X, int32 Y);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Break Terrain")
+		int32 BreakNumber = 8;
+	//Break Terrain Event
+	void BreakTerrainData();
+
+
+	// Build All Blocks
+	void BuildAllBlocks();
+
+
+	// Generate Bit Data from texture
+	void GenerateBitDataFromTexture();
+
+	// Generate Bit Data from Current Blocks
+	void GenerateBitDataFromLevel();
+
+	// Create Layer With ID
+	class UBlockLayer* CreateLayerWithID(const uint8& LayerID);
+
+	// Get Layer With ID
+	class UBlockLayer* GetLayerWithID(const uint8& LayerID)const;
+
+	// Destroy Instanced SimpleBlocks and MegaBlocks
+	void DestroyLevelInstanceData();
+
+	// Destroy Everything
+	void DestroyAll();
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//						 Rendering  -  Load/Unload Level Data
+
+
+	// Load Level Block Data 
+	void LoadLevel();
+
+	// Unload Level Bloc Data
+	void UnLoadLevel();
+
+
+
+	// Is the terrain Loaded/Being Rendered
+	bool bLevelLoaded = false;
+
+	// Data was Loaded
+	UFUNCTION(BlueprintImplementableEvent, Category = "BlockConstructor")
+		void BP_LevelLoaded();
+
+	// Data was Unloaded 
+	UFUNCTION(BlueprintImplementableEvent, Category = "BlockConstructor")
+		void BP_LevelUnloaded();
+
+	// Check Distance Function
+	void CheckDistance();
+	// Check distance Timer Handle
+	FTimerHandle DistanceCheckingHandle;
+
+
+
+
+
+
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						Save and Load Part
@@ -120,7 +208,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
 		bool bAutoLoadData;
 
-
+	// Build Level Data after optimization is finished
 	bool bAutoBuildAfterOptimization = false;
 
 	//Save Block Data
@@ -134,18 +222,42 @@ public:
 	// Save File Name Location
 	UPROPERTY()
 		FString SaveFileDir = TEXT("D:\\\\SomeFolder\\\\SaveFileName");
-	
-	// Called From Thread
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//						Optimization Thread
+
+
+
+	class FMegaBlockFinder* TheOpimizingThread;
+
+	// Checking if Optimization Thread Finished
 	void RealtimeOpimizationThreadChecking();
+
+	// Optimization Checking Timer Handle
 	FTimerHandle RealtimeOptimizationThreadTimerHandle;
-	bool bRealtimeOpimization = false;
+
+
+	// Optimize Data during runtime
+	UFUNCTION(BlueprintCallable, Category = "Optimization")
+		void OptimiseLevelData(ETypeOfOptimization TheType);
+
+	// Optimize Data in the Editor
+	void OptimiseBitData(ETypeOfOptimization OptimizationType = ETypeOfOptimization::Horizontal, bool bAutoBuildLevelAfterCompleteion = false);
+
+
+	bool IsOptimizing();
+
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	//						The Layers
 
 
 	// Current Block Layer Component list
-	//UPROPERTY()  // Will make Level To Save The Mesh Instances into .umap
+	//UPROPERTY()  // Will make Level Save The Mesh Instances into .umap
 		TArray<class UBlockLayer*>  TheLayers;
 
 	// Create Layers from current Terrain Bit Data
@@ -153,8 +265,7 @@ public:
 
 
 	// Is the Position Busy 
-//	UFUNCTION(BlueprintCallable, Category = "Layer")
-		bool IsPositionBusy(const ConstructorPosition & ThePosition)const;
+	bool IsPositionBusy(const ConstructorPosition & ThePosition)const;
 
 	// Finds if ID is in Terrain Array
 	FORCEINLINE bool Layers_ContainsID(TArray<uint8>& TheGenerateLayers, uint8 & ID)	{
@@ -185,70 +296,15 @@ public:
 	}
 
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//						Core Events
-
-
-	// Add Block At location
-	UFUNCTION(BlueprintCallable, Category = "Save")
-		void AddBlockAtLocation(FVector Location, uint8 LayerID);
-
-	// Destroy Block At location
-	UFUNCTION(BlueprintCallable, Category = "Save")
-		void DestroyBlockAtLocaiton(FVector Location);
-
-	// Optimize Data during runtime
-	UFUNCTION(BlueprintCallable, Category = "Optimization")
-		void OptimiseLevelData(ETypeOfOptimization TheType);
-
-	// Optimize Data in the Editor
-	void OptimiseBitData(ETypeOfOptimization OptimizationType = ETypeOfOptimization::Horizontal, bool bAutoBuildLevelAfterCompleteion = false);
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Break Terrain")
-		int32 BreakNumber = 8;
-	//Break Terrain Event
-	void BreakTerrainData();
-
-
-
-	void CheckDistance();
-	void LoadLevel();
-	void UnLoadLevel();
-
-	FTimerHandle DistanceCheckingHandle;
-
-
-	// Build All Blocks
-	void BuildAllBlocks();
-
-	// Build Terrain from Bit Data.
-	void BuildPureBitTerrain();
-
-	// Generate Bit Data from texture
-	void GenerateBitDataFromTexture();
-
-	// Generate Bit Data from Current Blocks
-	void GenerateBitDataFromLevel();
-
-	// Create Layer With ID
-	class UBlockLayer* CreateLayerWithID(const uint8& LayerID);
-
-	// Get Layer With ID
-	class UBlockLayer* GetLayerWithID(const uint8& LayerID)const ;
-
-	// Destroy Bit Data 
-	void DestroyBitData();
-
-	// Destroy Generated SimpleBlocks and MegaBlocks
-	void DestroyLevelBlockData();
-
-	// Destroy Everything
-	void DestroyAll();
+	
 
 };
 
+// Check if file exists
+inline bool FileExists(char* name) {
+	struct stat buffer;
+	return (stat(name, &buffer) == 0);
+}
 
 
 class FMegaBlockFinder : public FRunnable
@@ -258,8 +314,6 @@ class FMegaBlockFinder : public FRunnable
 
 	// Stop this thread? Uses Thread Safe Counter 
 	FThreadSafeCounter StopTaskCounter;
-
-//	static  FMegaBlockFinder* Runnable;
 
 	/** Level Block Constructor*/
 	class ALevelBlockConstructor* TheConstructor;
@@ -286,7 +340,6 @@ class FMegaBlockFinder : public FRunnable
 	FDateTime StartTime;
 
 
-
 	// Initialization
 	virtual bool Init();
 
@@ -307,14 +360,14 @@ class FMegaBlockFinder : public FRunnable
 	void EnsureCompletion();
 
 
-
+	// Check Bit Data Horizontally in X Direction
 	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_XDir(uint8& LayerID, uint32& Z, uint32 X, uint32& Y1, uint32& Y2)const{
 		for (uint32 i = Y1; i <= Y2; ++i)
 			if (TerrainBitData[LevelZLayerSize*Z + X*LevelSize + i] != LayerID)
 				return false;
 		return true;
 	}
-
+	// Check Bit Data Horizontally in Y Direction
 	FORCEINLINE bool CheckTerrainBitFilled_Horizontal_YDir(uint8& LayerID, uint32& Z, uint32& X1, uint32& X2, uint32 Y)const{
 		for (uint32 i = X1; i <= X2; ++i)
 			if (TerrainBitData[LevelZLayerSize*Z + i*LevelSize + Y] != LayerID)
@@ -323,24 +376,25 @@ class FMegaBlockFinder : public FRunnable
 	}
 
 
-
+	// Check Bit Data Volumetrically in X Direction
 	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_XDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32 X2, uint32& Y1, uint32& Y2)const{
-		for (uint32 z = Z1; z <= Z2; z++)
-			for (uint32 y = Y1; y <= Y2; y++)
+		for (uint32 z = Z1; z <= Z2; ++z)
+			for (uint32 y = Y1; y <= Y2; ++y)
 				if (TerrainBitData[LevelZLayerSize*z + X2*LevelSize + y] != LayerID)
 					return false;
 		return true;
 	}
 
+	// Check Bit Data Volumetrically in Y Direction
 	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_YDir(uint8& LayerID, uint32& Z1, uint32& Z2, uint32& X1, uint32& X2, uint32& Y1, uint32 Y2)const	{
-		for (uint32 z = Z1; z <= Z2; z++)
-			for (uint32 x = X1; x <= X2; x++)
+		for (uint32 z = Z1; z <= Z2; ++z)
+			for (uint32 x = X1; x <= X2; ++x)
 				if (TerrainBitData[LevelZLayerSize*z + x*LevelSize + Y2] != LayerID)
 					return false;
 
 		return true;
 	}
-
+	// Check Bit Data Volumetrically in Z Direction
 	FORCEINLINE bool CheckTerrainBitFilled_Volumetric_ZDir(uint8& LayerID, uint32& Z1, uint32 Z2, uint32& X1, uint32& X2, uint32& Y1, uint32& Y2)const{
 		for (uint32 x = X1; x <= X2; ++x)
 			for (uint32 y = Y1; y <= Y2; ++y)
@@ -354,15 +408,13 @@ class FMegaBlockFinder : public FRunnable
 public:
 	//Constructor
 	FMegaBlockFinder(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType);
+
 	// Destructor
 	virtual ~FMegaBlockFinder();
-	// Start The Optimization
-	//FMegaBlockFinder* OptimizeData(TArray<uint8>& newTerrainBitData, ALevelBlockConstructor* newTheContructor, ETypeOfOptimization newOptimizationType=ETypeOfOptimization::Horizontal);
 
 	// Stop The Thread
 	void ShutDown();
 
 	// Check if Thread Is Finished
 	bool IsFinished();
-
 };

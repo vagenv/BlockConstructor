@@ -4,12 +4,14 @@
 
 #include "Engine.h"
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //								Custom Print Methods
 
+// Is the Game is Running (is outside editor)
+static bool bGameRunning = false;
+
+// Custom Printing Methods
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Black,text)
 #define printw(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3, FColor::White,text)
 #define printr(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red,text)
@@ -19,7 +21,6 @@
 #define printlong(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 25, FColor::Red,text)
 
 //General Log
-
 DECLARE_LOG_CATEGORY_EXTERN(BlockPlugin, Log, All);
 
 // Log Data

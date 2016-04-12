@@ -6,34 +6,35 @@
 #include "Object.h"
 #include "BlockConstructorData.generated.h"
 
-// Camera State Type
+
+// Optimization Type
 UENUM(BlueprintType)
 enum class ETypeOfOptimization : uint8
 {
+	// Horizontal-> Horizontal Slices of Terrain
 	Horizontal UMETA(DisplayName = "Horizontal, Flat Terrain (Fast)"),
+
+	// Volumetic -> Growing cube
 	Volumetic UMETA(DisplayName = "Volumetic (Slow, Efficient)"),
 };
 
-struct GridPosition
-{
-
+// Global Grid Position (X,Y) [Like Vector2D but with int32]
+struct GridPosition{
 	int32 X;
 	int32 Y;
 	GridPosition() {}
 	GridPosition(const int16& newX, const int16& newY) :X(newX), Y(newY){}
 	FString ToString()const	{
-		return FString::Printf(TEXT("%X=i Y=%i"), X,Y);
+		return FString::Printf(TEXT("X=%i Y=%i"), X,Y);
 	}
-
 
 	friend inline bool operator==(const GridPosition& lhs, const GridPosition& rhs)	{
 		return ((lhs.X == rhs.X) && (lhs.Y == rhs.Y));
 	}
-
 };
 
-struct ConstructorPosition 
-{
+// Constructor Position. (X,Y,Z) [Like Vector but with uint16]
+struct ConstructorPosition{
 public:
 	uint16 X;
 	uint16 Y;
@@ -57,11 +58,15 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, ConstructorPosition& ThePosition)
 	return Ar;
 }
 
+// Data About Block ConstructorPosition and IntancedStaticMesh array position
 struct SimpleBlockData 
 {
 public:
 	ConstructorPosition Position;
+
+	// Position in InstancedStatiMeshComponent Bodies List
 	uint32 ArrayPosition;
+
 	SimpleBlockData() {}
 	SimpleBlockData(const ConstructorPosition& newPosition, const uint32 & newArrayPosition=0):Position(newPosition),ArrayPosition(newArrayPosition)	{}
 	
@@ -72,7 +77,7 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, SimpleBlockData& TheBlock){
 	return Ar;
 }
 
-
+// Data About MegaBlock Position
 struct MegaBlockCoreData 
 {
 public:
@@ -105,7 +110,7 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockCoreData& TheBlock){
 	return Ar;
 }
 
-
+// Data about MegaBlock Position and Size
 class MegaBlockMetaData:public MegaBlockCoreData
 {
 public:
@@ -119,12 +124,14 @@ public:
 
 
 
-
+// Data About MegaBlock Constructor Position, World Position and IntancedStaticMesh array position
 struct MegaBlockData:public MegaBlockCoreData
 {
 public:
 
 	FVector Location=FVector::ZeroVector;
+
+	// Position in InstancedStatiMeshComponent Bodies List	
 	uint32 ArrayPosition;
 
 	MegaBlockData() {}
@@ -135,6 +142,7 @@ public:
 	MegaBlockData(const MegaBlockMetaData& NewData)
 		:MegaBlockCoreData(NewData.Z1, NewData.Z2, NewData.X1, NewData.X2, NewData.Y1, NewData.Y2){}
 
+	// Calculate Position in The World
 	void CalculateLocation(const uint16& GridSize)
 	{
 		Location.X = ((float)((float)X2 + (float)X1)) / 2 * GridSize;
@@ -144,18 +152,8 @@ public:
 		else Location.Z = (float)((float)Z1* GridSize);
 	}
 };
-/*
-FORCEINLINE FArchive& operator<<(FArchive &Ar, MegaBlockData& TheBlock)
-{
-	//<< TheBlock.XScale<< TheBlock.YScale<< TheBlock.ZScale
-	Ar << TheBlock.Location << TheBlock.ArrayPosition;
 
-	return Ar;
-}
-
-*/
-
-
+// Save Data About UBlockLayer Data
 struct BlockLayerSaveData 
 {
 public:
@@ -177,7 +175,6 @@ public:
 													newMegaBlocks[i].Y1, newMegaBlocks[i].Y2 );
 		}
 		
-
 		SimpleBlocks_Core.SetNumUninitialized(newSimpleBlocks.Num());
 		for (int32 i = 0; i < newSimpleBlocks.Num();i++)
 		{
@@ -191,7 +188,7 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockLayerSaveData& TheLayerSaveD
 }
 
 
-
+// Save Data about BlockConstructor Data
 struct BlockConstructorSaveData
 {
 public:
@@ -221,7 +218,7 @@ FORCEINLINE FArchive& operator<<(FArchive &Ar, BlockConstructorSaveData& SaveDat
 	return Ar;
 }
 
-//BlueprintType
+// Table With Material + it's ID
 USTRUCT()
 struct FBlockMaterialIDTable : public FTableRowBase
 {
@@ -243,6 +240,7 @@ class UBlockConstructorData: public UObject
 	GENERATED_BODY()
 public:
 
+	// Get Closest Block Constructor in the level
 	UFUNCTION(BlueprintPure, meta = (HidePin = "WorldContextObject", DefaultToSelf = "WorldContextObject", DisplayName = "Get Closest Block Constructor", CompactNodeTitle = "Get BlockLevel", Keywords = "GetClosest"), Category = "LevelBlockConstructor")
 		static class ALevelBlockConstructor* GetClosestBlockConstructor(UObject* WorldContextObject, const FVector& ThePositon);
 

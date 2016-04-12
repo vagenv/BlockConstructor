@@ -1,6 +1,11 @@
 #pragma once
 
+// Created by user [gamernb] from  https://stackoverflow.com/
+// Taken from https://stackoverflow.com/questions/4753055/perlin-noise-generation-for-terrain
+
+
 #include "BlockConstructorPluginPrivatePCH.h"
+
 
 class PerlinNoise
 {

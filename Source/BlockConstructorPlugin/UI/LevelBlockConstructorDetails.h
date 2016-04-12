@@ -11,44 +11,54 @@ class FLevelBlockConstructorDetails : public IDetailCustomization
 {
 public:
 
+	// List of All selected Instances of LevelBlockConstructor
 	TArray<class ALevelBlockConstructor*> TheInstances;
 
 
 	FLevelBlockConstructorDetails();
 
-	FTextBlockStyle BigBlackTextStyle;
-	FTextBlockStyle BigRedTextStyle;
-	FTextBlockStyle BigWhiteTextStyle;
-	FTextBlockStyle MediumBlackTextStyle;
-	FTextBlockStyle MediumWhiteTextStyle;
+
+	// Text Type
+	FTextBlockStyle TextStyle_Big_Black;
+	FTextBlockStyle TextStyle_Big_Red;
+	FTextBlockStyle TextSytle_Big_White;
+	FTextBlockStyle TextStyle_Medium_Black;
+	FTextBlockStyle TextStyle_Medium_White;
 
 
+	// Save Location was Changed/Updated
+	void SaveLocationUpdated (const FText& NewText, ETextCommit::Type TextType);
 
-	void SaveTextChanged (const FText& NewText, ETextCommit::Type TextType);
-
-
+	// Actual customize function
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)override;
+
 
 	// Generate Bit Data From Texture
 	FReply GenerateBitDataFromTexture();
 
+	// Optimize The Data Horizontally
 	FReply OptimiseBitData_Horizontal();
+
+	// Optimize The Data Vertically
 	FReply OptimiseBitData_Volumetical();
 
 
-	FReply DestroyBitData();
-	FReply DestroyLevelBlockData();
+	// Destroy Level Instance Data
+	FReply DestroyLevelInstance();
+	// Destroy All generated Data
 	FReply DestroyEverything();
 
-	FReply BuildPureBitTerrain();
+	// Build Block Data
+	FReply BuildBlocks();
 
-	FReply BuildBlockArrayData();
-
+	// Save Block Data
 	FReply SaveData();
+
+	// Load Block Data
 	FReply LoadData();
 
 
-
+	// Break Terrain into parts
 	FReply BreakTerrain();
 
 
@@ -57,9 +67,5 @@ public:
 	// Call Function By ref or name
 	static FReply ExecuteToolCommand(IDetailLayoutBuilder* DetailBuilder, UFunction* MethodsToExecute);
 	static FReply ExecuteToolCommand(IDetailLayoutBuilder* DetailBuilder, FString MethodsToExecute);
-
-
-
-	static void PrintLog(FString Message);
 
 };
