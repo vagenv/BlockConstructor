@@ -58,7 +58,7 @@ public:
 
 	// X, Y   - Maximum Size of Block Constructor Terrain.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
-		int32 LevelSize = 128;
+		int32 LevelSize = 32;
 
 	// Z -   Maximum Height of Block Constructor Terrain
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")

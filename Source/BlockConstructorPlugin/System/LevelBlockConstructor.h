@@ -57,7 +57,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 		int32 GridSize = 100;
 
-	// Mesh of Terrain
+	// Mesh which will be scaled to build data
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "System")
 	class UStaticMesh* BlockMesh;
 
