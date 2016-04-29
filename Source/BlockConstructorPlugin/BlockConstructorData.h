@@ -224,9 +224,9 @@ struct FBlockMaterialIDTable : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 		int32  MaterialID;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 		UMaterialInstance* BlockMaterial;
 
 };
