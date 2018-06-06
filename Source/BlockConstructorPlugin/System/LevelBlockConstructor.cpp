@@ -1,17 +1,16 @@
 // Copyright 2016 Vagen Ayrapetyan
 
-
-#include "BlockConstructorPluginPrivatePCH.h"
-
 #include "System/LevelBlockConstructor.h"
 #include "System/BlockLayer.h"
+#include "BlockConstructorPluginPrivatePCH.h"
 #include "Engine.h"
 #include "UnrealNetwork.h"
 #include "ScopedTransaction.h"
 
 #include "FileManager.h"
 #include "Archive.h"
-#include "ArchiveBase.h"
+#include "Editor/UnrealEd/Classes/Editor/GroupActor.h"
+//#include "ArchiveBase.h"
 
 #define LOCTEXT_NAMESPACE "LevelBlockConstructorDetails"
 
@@ -329,7 +328,6 @@ void ALevelBlockConstructor::BreakTerrainData() {
 		return;
 	}
 
-
 	AActor* RootActor = GetWorld()->SpawnActor <AActor>(AGroupActor::StaticClass());
 	RootActor->SetOwner(GetOwner());
 
@@ -362,7 +360,8 @@ void ALevelBlockConstructor::BreakTerrainData() {
 
 			if (TheNewConstructor) {
 				TheNewConstructor->SetOwner(GetOwner());
-				TheNewConstructor->AttachRootComponentToActor(RootActor);
+            TheNewConstructor->AttachToActor (RootActor, FAttachmentTransformRules::KeepRelativeTransform);
+				//TheNewConstructor->AttachRootComponentToActor(RootActor);
 				TheNewConstructor->SetActorLabel(TEXT("Part : ") + FString::FromInt(x) + TEXT("   ") + FString::FromInt(y));
 
 				TheNewConstructor->LevelHeight = LevelHeight;

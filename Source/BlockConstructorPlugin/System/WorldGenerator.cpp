@@ -1,11 +1,10 @@
 // Copyright 2016 Vagen Ayrapetyan
 // 
 
-#include "BlockConstructorPluginPrivatePCH.h"
-
-#include "System/LevelBlockConstructor.h"
 #include "System/WorldGenerator.h"
+#include "System/LevelBlockConstructor.h"
 
+#include "BlockConstructorPluginPrivatePCH.h"
 #include "Engine.h"
 #include "ScopedTransaction.h"
 
@@ -126,7 +125,8 @@ void AWorldGenerator::GenerateConstructorAtPosition(GridPosition ThePosition)
 	if (NewConstructor) 
 	{
 		// General Settings
-		NewConstructor->AttachRootComponentToActor(this);
+      NewConstructor->AttachToActor (this, FAttachmentTransformRules::KeepRelativeTransform);
+		//NewConstructor->AttachRootComponentToActor(this);
 		NewConstructor->SetActorLabel(ThePosition.ToString());
 		NewConstructor->GlobalGridPosition = ThePosition;
 

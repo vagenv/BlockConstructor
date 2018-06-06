@@ -1,7 +1,7 @@
 // Copyright 2015-2016 Vagen Ayrapetyan. All Rights Reserved.
 
-#include "BlockConstructorPluginPrivatePCH.h"
 #include "BlockConstructorData.h"
+#include "BlockConstructorPluginPrivatePCH.h"
 #include "System/LevelBlockConstructor.h"
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

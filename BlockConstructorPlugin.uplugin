@@ -6,7 +6,7 @@
 	"VersionName" : "1.0",
 	"CreatedBy" : " Vagen",
 	"CreatedByURL" : " ",
-	"EngineVersion" : "4.11.2",
+	"EngineVersion" : "4.19.1",
 	"Description" : "Create and Manage BlockData",
 	"Category" : "Vagen",
 	"EnabledByDefault" : true,

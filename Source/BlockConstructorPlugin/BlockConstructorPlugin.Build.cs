@@ -1,68 +1,64 @@
 // Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
 
-namespace UnrealBuildTool.Rules
+using UnrealBuildTool;
+
+public class BlockConstructorPlugin : ModuleRules
 {
-	public class BlockConstructorPlugin : ModuleRules
+	public BlockConstructorPlugin(ReadOnlyTargetRules Target) : base(Target)
 	{
-        public BlockConstructorPlugin(TargetInfo Target)
-		{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-            PublicIncludePaths.AddRange(
-                new string[] {
-                "BlockConstructorPlugin/Public",
-                "BlockConstructorPlugin/System",
-                "BlockConstructorPlugin/UI"
-            }
-            );
-
-
-            PrivateIncludePaths.AddRange(
-                new string[] {
-                "BlockConstructorPlugin/Private"
-                }
-               );
-
-
-            PublicDependencyModuleNames.AddRange(
-                new string[]
-                {
-                    "Engine",
-                    "Core",
-                    "CoreUObject",
-
-                    "Slate",
-                    "UnrealEd"
-					// ... add other public dependencies that you statically link with here ...
+		PublicIncludePaths.AddRange(
+				new string[] {
+				"BlockConstructorPlugin/Public",
+				"BlockConstructorPlugin/System",
+				"BlockConstructorPlugin/UI"
 				}
-                );
+			);
 
-            PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "Engine",
-                "Projects",
 
-                "CoreUObject",
-                "InputCore",
+		PrivateIncludePaths.AddRange(
+				new string[] {
+				"BlockConstructorPlugin/Private"
+				}
+			);
 
-                "UnrealEd",
-                "LevelEditor",
 
-                 "PropertyEditor",
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Engine",
+				"Core",
+				"CoreUObject",
 
-                "Slate",
-                "SlateCore"
-				// ... add private dependencies that you statically link with here ...	
+				"Slate",
+				"UnrealEd"
+				// ... add other public dependencies that you statically link with here ...
 			}
-            );
+			);
 
-
-            DynamicallyLoadedModuleNames.AddRange(
-				new string[]
-				{
-					// ... add any modules that your module loads dynamically here ...
-				}
-				);
+		PrivateDependencyModuleNames.AddRange(
+		new string[]
+		{
+			"Engine",
+			"Projects",
+			"CoreUObject",
+			"InputCore",
+			"UnrealEd",
+			"LevelEditor",
+			"PropertyEditor",
+			"Slate",
+			"SlateCore"
+			// ... add private dependencies that you statically link with here ...	
 		}
+		);
+
+
+		DynamicallyLoadedModuleNames.AddRange(
+			new string[]
+			{
+				// ... add any modules that your module loads dynamically here ...
+			}
+			);
 	}
 }

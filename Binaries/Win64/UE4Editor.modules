@@ -1,8 +1,7 @@
 {
-	"Changelist" : 0,
-	"BuildId" : "ecc927fc-f73f-40c7-b690-dfd3eda2e986",
-	"Modules" : 
+	"BuildId": "a41471d8-2661-45a6-ad5a-cc5b47a6f6ec",
+	"Modules": 
 	{
-		"BlockConstructorPlugin" : "UE4Editor-BlockConstructorPlugin.dll"
+		"BlockConstructorPlugin": "UE4Editor-BlockConstructorPlugin.dll"
 	}
 }

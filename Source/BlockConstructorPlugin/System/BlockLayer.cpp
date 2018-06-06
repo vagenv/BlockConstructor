@@ -1,7 +1,7 @@
 // Copyright 2015 Vagen Ayrapetyan
 
-#include "BlockConstructorPluginPrivatePCH.h"
 #include "System/BlockLayer.h"
+#include "BlockConstructorPluginPrivatePCH.h"
 #include "Engine.h"
 
 UBlockLayer::UBlockLayer(const class FObjectInitializer& PCIP)
